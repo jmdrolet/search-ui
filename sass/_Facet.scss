@@ -1,5 +1,6 @@
 @import "bourbon/bourbon";
 @import "Variables";
+@import "mixins/mediaQuery";
 
 .CoveoFacet, .CoveoFacetRange, .CoveoFacetSlider, .CoveoHierarchicalFacet {
   margin: 10px 0px 10px 0px;
@@ -41,5 +42,12 @@
     &.coveo-selected, &.coveo-excluded, &.coveo-facet-search-selectable {
       opacity: 1;
     }
+  }
+}
+
+.coveo-facet-value{
+  @include transition(all $standard-transition-timing-function 300ms);
+  @include smallMobile() {
+    @include transition(all $standard-transition-timing-function 400ms);
   }
 }

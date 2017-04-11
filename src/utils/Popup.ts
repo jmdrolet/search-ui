@@ -31,49 +31,61 @@ interface IElementBoundary {
   bottom: number;
 }
 
-export class PopupUtils {
-  static positionPopup(popUp: HTMLElement, nextTo: HTMLElement, boundary: HTMLElement, desiredPosition: IPosition, appendTo?: HTMLElement, checkForBoundary = 0) {
-    popUp.style.position = 'absolute';
+export class Popup {
+
+  constructor(public popUp: HTMLElement, private popUpCloseButton?: HTMLElement, private manageCloseEvent = true) {
+  }
+
+  public positionPopup(nextTo: HTMLElement, boundary: HTMLElement, desiredPosition: IPosition, appendTo?: HTMLElement, checkForBoundary = 0) {
+
+    if (this.manageCloseEvent) {
+      this.bindCloseEvent();
+    }
+    this.popUp.style.position = 'absolute';
     if (appendTo) {
-      $$(appendTo).append(popUp);
+      $$(appendTo).append(this.popUp);
     }
     desiredPosition.verticalOffset = desiredPosition.verticalOffset ? desiredPosition.verticalOffset : 0;
     desiredPosition.horizontalOffset = desiredPosition.horizontalOffset ? desiredPosition.horizontalOffset : 0;
 
     let popUpPosition = $$(nextTo).offset();
-    PopupUtils.basicVerticalAlignment(popUpPosition, popUp, nextTo, desiredPosition);
-    PopupUtils.basicHorizontalAlignment(popUpPosition, popUp, nextTo, desiredPosition);
-    PopupUtils.finalAdjustement($$(popUp).offset(), popUpPosition, popUp, desiredPosition);
+    this.basicVerticalAlignment(popUpPosition, this.popUp, nextTo, desiredPosition);
+    this.basicHorizontalAlignment(popUpPosition, this.popUp, nextTo, desiredPosition);
+    this.finalAdjustement($$(this.popUp).offset(), popUpPosition, this.popUp, desiredPosition);
 
-    let popUpBoundary = PopupUtils.getBoundary(popUp);
-    let boundaryPosition = PopupUtils.getBoundary(boundary);
+    let popUpBoundary = this.getBoundary(this.popUp);
+    let boundaryPosition = this.getBoundary(boundary);
     if (checkForBoundary < 2) {
-      let checkBoundary = PopupUtils.checkForOutOfBoundary(popUpBoundary, boundaryPosition);
+      let checkBoundary = this.checkForOutOfBoundary(popUpBoundary, boundaryPosition);
       if (checkBoundary.horizontal != 'ok' && desiredPosition.horizontalClip === true) {
-        let width = popUp.offsetWidth;
+        let width = this.popUp.offsetWidth;
         if (popUpBoundary.left < boundaryPosition.left) {
           width -= boundaryPosition.left - popUpBoundary.left;
         }
         if (popUpBoundary.right > boundaryPosition.right) {
           width -= popUpBoundary.right - boundaryPosition.right;
         }
-        popUp.style.width = width + 'px';
+        this.popUp.style.width = width + 'px';
         checkBoundary.horizontal = 'ok';
       }
       if (checkBoundary.vertical != 'ok' || checkBoundary.horizontal != 'ok') {
-        let newDesiredPosition = PopupUtils.alignInsideBoundary(desiredPosition, checkBoundary);
-        PopupUtils.positionPopup(popUp, nextTo, boundary, newDesiredPosition, appendTo, checkForBoundary + 1);
+        let newDesiredPosition = this.alignInsideBoundary(desiredPosition, checkBoundary);
+        this.positionPopup(nextTo, boundary, newDesiredPosition, appendTo, checkForBoundary + 1);
       }
     }
   }
 
-  private static finalAdjustement(popUpOffSet: IOffset, popUpPosition: IOffset, popUp: HTMLElement, desiredPosition: IPosition) {
+  private bindCloseEvent() {
+
+  }
+
+  private finalAdjustement(popUpOffSet: IOffset, popUpPosition: IOffset, popUp: HTMLElement, desiredPosition: IPosition) {
     let position = $$(popUp).position();
     popUp.style.top = (position.top + desiredPosition.verticalOffset) - (popUpOffSet.top - popUpPosition.top) + 'px';
     popUp.style.left = (position.left + desiredPosition.horizontalOffset) - (popUpOffSet.left - popUpPosition.left) + 'px';
   }
 
-  private static basicVerticalAlignment(popUpPosition: IOffset, popUp: HTMLElement, nextTo: HTMLElement, desiredPosition: IPosition) {
+  private basicVerticalAlignment(popUpPosition: IOffset, popUp: HTMLElement, nextTo: HTMLElement, desiredPosition: IPosition) {
     switch (desiredPosition.vertical) {
       case VerticalAlignment.TOP:
         popUpPosition.top -= popUp.offsetHeight;
@@ -93,7 +105,7 @@ export class PopupUtils {
     }
   }
 
-  private static basicHorizontalAlignment(popUpPosition: IOffset, popUp: HTMLElement, nextTo: HTMLElement, desiredPosition: IPosition) {
+  private basicHorizontalAlignment(popUpPosition: IOffset, popUp: HTMLElement, nextTo: HTMLElement, desiredPosition: IPosition) {
     switch (desiredPosition.horizontal) {
       case HorizontalAlignment.LEFT:
         popUpPosition.left -= popUp.offsetWidth;
@@ -102,7 +114,7 @@ export class PopupUtils {
         popUpPosition.left += nextTo.offsetWidth;
         break;
       case HorizontalAlignment.CENTER:
-        popUpPosition.left += PopupUtils.offSetToAlignCenter(popUp, nextTo);
+        popUpPosition.left += this.offSetToAlignCenter(popUp, nextTo);
         break;
       case HorizontalAlignment.INNERLEFT:
         break; // Nothing to do, it's the default alignment normally
@@ -114,7 +126,7 @@ export class PopupUtils {
     }
   }
 
-  private static alignInsideBoundary(oldPosition: IPosition, checkBoundary) {
+  private alignInsideBoundary(oldPosition: IPosition, checkBoundary) {
     let newDesiredPosition = oldPosition;
     if (checkBoundary.horizontal == 'left') {
       newDesiredPosition.horizontal = HorizontalAlignment.RIGHT;
@@ -131,11 +143,11 @@ export class PopupUtils {
     return newDesiredPosition;
   }
 
-  private static offSetToAlignCenter(popUp: HTMLElement, nextTo: HTMLElement) {
+  private offSetToAlignCenter(popUp: HTMLElement, nextTo: HTMLElement) {
     return (nextTo.offsetWidth - popUp.offsetWidth) / 2;
   }
 
-  private static getBoundary(element: HTMLElement) {
+  private getBoundary(element: HTMLElement) {
     let boundaryOffset = $$(element).offset();
     let toAddVertically;
     if (element.tagName.toLowerCase() == 'body') {
@@ -153,7 +165,7 @@ export class PopupUtils {
     };
   }
 
-  private static checkForOutOfBoundary(popUpBoundary: IElementBoundary, boundary: IElementBoundary) {
+  private checkForOutOfBoundary(popUpBoundary: IElementBoundary, boundary: IElementBoundary) {
     let ret = {
       vertical: 'ok',
       horizontal: 'ok'
