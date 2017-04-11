@@ -1,4 +1,6 @@
 import { $$, IOffset } from './Dom';
+import {Utils} from './Utils';
+import { InitializationEvents } from '../events/InitializationEvents';
 
 export interface IPosition {
   vertical: VerticalAlignment;
@@ -31,9 +33,16 @@ interface IElementBoundary {
   bottom: number;
 }
 
-export class Popup {
+export class PopUp {
 
-  constructor(public popUp: HTMLElement, private popUpCloseButton?: HTMLElement, private manageCloseEvent = true) {
+  private documentClickListener: EventListener;
+
+  constructor(public popUp: HTMLElement, private coveoRoot: HTMLElement, private popUpCloseButton: HTMLElement, private manageCloseEvent = true) {
+    $$(this.coveoRoot).on(InitializationEvents.nuke, () => {
+      if (this.documentClickListener) {
+        $$(document.documentElement).off('click', this.documentClickListener);
+      }
+    });
   }
 
   public positionPopup(nextTo: HTMLElement, boundary: HTMLElement, desiredPosition: IPosition, appendTo?: HTMLElement, checkForBoundary = 0) {
@@ -76,8 +85,17 @@ export class Popup {
   }
 
   private bindCloseEvent() {
-
+    this.documentClickListener = event => {
+      if (Utils.isHtmlElement(event.target)) {
+        let eventTarget = $$(<HTMLElement>event.target);
+        if (!eventTarget.isDescendant(this.popUpCloseButton) && !eventTarget.isDescendant(this.popUp)) {
+          $$(this.popUp).detach();
+        }
+      }
+    };
+    $$(document.documentElement).on('click', this.documentClickListener);
   }
+  
 
   private finalAdjustement(popUpOffSet: IOffset, popUpPosition: IOffset, popUp: HTMLElement, desiredPosition: IPosition) {
     let position = $$(popUp).position();
