@@ -10,7 +10,7 @@ import { ISubscriptionItemRequest, SUBSCRIPTION_TYPE, ISubscriptionQueryRequest 
 import { PopUp, HorizontalAlignment, VerticalAlignment } from '../../utils/PopUp';
 import { l } from '../../strings/Strings';
 import { $$, Dom } from '../../utils/Dom';
-import * as _ from 'underscore';
+import _ = require('underscore');
 
 export interface ISearchAlertMessageOptions {
   closeDelay: number;
@@ -117,7 +117,7 @@ export class SearchAlertsMessage extends Component {
     this.message.toggleClass('coveo-subscriptions-messages-error', error);
     let closeButton = this.message.find('.coveo-subscriptions-messages-info-close');
     $$(closeButton).on('click', () => this.close());
-    let popUp = new PopUp(this.message.el, this.root, closeButton);
+    let popUp = new PopUp(this.message.el, this.root, null, null, false);
     popUp.positionPopup(dom.el, this.root, {
       horizontal: HorizontalAlignment.INNERLEFT,
       vertical: VerticalAlignment.BOTTOM,
@@ -127,6 +127,9 @@ export class SearchAlertsMessage extends Component {
 
     this.startCloseDelay();
 
+    this.message.on('mouseleave', () => {
+      this.startCloseDelay();
+    });
     this.message.on('mouseenter', () => {
       this.stopCloseDelay();
     });
