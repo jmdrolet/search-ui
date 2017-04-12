@@ -42,12 +42,6 @@ export class PopUp {
     if (!popUpCloseButton && manageCloseEvent) {
       Assert.fail('In PopUp, should give a popUpCloseButton when manageCloseEvent is true.');
     }
-
-    $$(this.coveoRoot).on(InitializationEvents.nuke, () => {
-      if (this.documentClickListener) {
-        $$(document.documentElement).off('click', this.documentClickListener);
-      }
-    });
   }
 
   public positionPopup(nextTo: HTMLElement, boundary: HTMLElement, desiredPosition: IPosition, appendTo?: HTMLElement, checkForBoundary = 0) {
@@ -93,15 +87,21 @@ export class PopUp {
     this.documentClickListener = event => {
       if (Utils.isHtmlElement(event.target)) {
         let eventTarget = $$(<HTMLElement>event.target);
-        if (!eventTarget.isDescendant(this.popUpCloseButton) && !eventTarget.isDescendant(this.popUp)) {
+        if (eventTarget.el !== this.popUpCloseButton && !eventTarget.isDescendant(this.popUpCloseButton) && eventTarget.el !== this.popUp && !eventTarget.isDescendant(this.popUp)) {
           $$(this.popUp).detach();
           this.onCloseCallback && this.onCloseCallback();
+          this.deleteDocumentEventListener();
         }
       }
     };
     $$(document.documentElement).on('click', this.documentClickListener);
   }
 
+  private deleteDocumentEventListener() {
+    if (this.documentClickListener) {
+      $$(document.documentElement).off('click', this.documentClickListener);
+    }
+  }
 
   private finalAdjustement(popUpOffSet: IOffset, popUpPosition: IOffset, popUp: HTMLElement, desiredPosition: IPosition) {
     let position = $$(popUp).position();

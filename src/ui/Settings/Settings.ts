@@ -82,7 +82,7 @@ export class Settings extends Component {
       $$(this.menu).detach();
     }
     this.menu = this.buildMenu();
-    let popUp = new PopUp(this.menu, this.root, this.element);
+    let popUp = new PopUp(this.menu, this.root, this.element, () => { this.isOpened = false; });
     popUp.positionPopup(this.element, this.root, this.getPopupPositioning(), this.root);
 
   }
@@ -116,9 +116,6 @@ export class Settings extends Component {
         this.open();
       }
     });
-
-    $$(this.element).on('mouseleave', () => this.mouseleave());
-    $$(this.element).on('mouseenter', () => this.mouseenter());
   }
 
   private buildMenu(): HTMLElement {
@@ -145,17 +142,6 @@ export class Settings extends Component {
       menu.appendChild(menuItemDom);
     });
     return menu;
-  }
-
-  private mouseleave() {
-    clearTimeout(this.closeTimeout);
-    this.closeTimeout = setTimeout(() => {
-      this.close();
-    }, this.options.menuDelay);
-  }
-
-  private mouseenter() {
-    clearTimeout(this.closeTimeout);
   }
 
   private getPopupPositioning(): IPosition {
