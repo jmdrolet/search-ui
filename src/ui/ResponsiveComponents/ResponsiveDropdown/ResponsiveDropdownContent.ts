@@ -1,5 +1,5 @@
 import { $$, Dom } from '../../../utils/Dom';
-import { PopupUtils, HorizontalAlignment, VerticalAlignment } from '../../../utils/PopupUtils';
+import { PopUp, HorizontalAlignment, VerticalAlignment } from '../../../utils/PopUp';
 import { ResponsiveComponentsManager } from '../ResponsiveComponentsManager';
 
 export interface IResponsiveDropdownContent {
@@ -15,15 +15,16 @@ export class ResponsiveDropdownContent implements IResponsiveDropdownContent {
 
   private coveoRoot: Dom;
   private cssClassName: string;
-
   private widthRatio: number;
   private minWidth: number;
+  private popUp: PopUp;
 
   constructor(componentName: string, public element: Dom, coveoRoot: Dom, minWidth: number, widthRatio: number) {
     this.cssClassName = `coveo-${componentName}-dropdown-content`;
     this.coveoRoot = coveoRoot;
     this.widthRatio = widthRatio;
     this.minWidth = minWidth;
+    this.popUp = new PopUp(this.element.el, this.coveoRoot.el, null, null, false);
   }
 
   public positionDropdown() {
@@ -37,7 +38,7 @@ export class ResponsiveDropdownContent implements IResponsiveDropdownContent {
     }
     this.element.el.style.width = width.toString() + 'px';
 
-    PopupUtils.positionPopup(this.element.el, $$(this.coveoRoot.find(`.${ResponsiveComponentsManager.DROPDOWN_HEADER_WRAPPER_CSS_CLASS}`)).el, this.coveoRoot.el,
+    this.popUp.positionPopup($$(this.coveoRoot.find(`.${ResponsiveComponentsManager.DROPDOWN_HEADER_WRAPPER_CSS_CLASS}`)).el, this.coveoRoot.el,
       { horizontal: HorizontalAlignment.INNERRIGHT, vertical: VerticalAlignment.BOTTOM, verticalOffset: 15 }, this.coveoRoot.el);
   }
 

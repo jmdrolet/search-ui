@@ -3,7 +3,7 @@ import { IComponentBindings } from '../Base/ComponentBindings';
 import { ComponentOptions } from '../Base/ComponentOptions';
 import { InitializationEvents } from '../../events/InitializationEvents';
 import { $$ } from '../../utils/Dom';
-import { PopupUtils, IPosition, HorizontalAlignment, VerticalAlignment } from '../../utils/PopupUtils';
+import { PopUp, IPosition, HorizontalAlignment, VerticalAlignment } from '../../utils/PopUp';
 import { IMenuItem } from '../Menu/MenuItem';
 import { SettingsEvents } from '../../events/SettingsEvents';
 import { Initialization } from '../Base/Initialization';
@@ -82,9 +82,8 @@ export class Settings extends Component {
       $$(this.menu).detach();
     }
     this.menu = this.buildMenu();
-    $$(this.menu).on('mouseleave', () => this.mouseleave());
-    $$(this.menu).on('mouseenter', () => this.mouseenter());
-    PopupUtils.positionPopup(this.menu, this.element, this.root, this.getPopupPositioning(), this.root);
+    let popUp = new PopUp(this.menu, this.root, this.element);
+    popUp.positionPopup(this.element, this.root, this.getPopupPositioning(), this.root);
 
   }
 

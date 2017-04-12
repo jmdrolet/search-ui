@@ -7,7 +7,7 @@ import {
 } from '../../events/SearchAlertEvents';
 import { QueryEvents } from '../../events/QueryEvents';
 import { ISubscriptionItemRequest, SUBSCRIPTION_TYPE, ISubscriptionQueryRequest } from '../../rest/Subscription';
-import { PopupUtils, HorizontalAlignment, VerticalAlignment } from '../../utils/PopupUtils';
+import { PopUp, HorizontalAlignment, VerticalAlignment } from '../../utils/PopUp';
 import { l } from '../../strings/Strings';
 import { $$, Dom } from '../../utils/Dom';
 import * as _ from 'underscore';
@@ -117,8 +117,8 @@ export class SearchAlertsMessage extends Component {
     this.message.toggleClass('coveo-subscriptions-messages-error', error);
     let closeButton = this.message.find('.coveo-subscriptions-messages-info-close');
     $$(closeButton).on('click', () => this.close());
-
-    PopupUtils.positionPopup(this.message.el, dom.el, this.root, {
+    let popUp = new PopUp(this.message.el, this.root, closeButton);
+    popUp.positionPopup(dom.el, this.root, {
       horizontal: HorizontalAlignment.INNERLEFT,
       vertical: VerticalAlignment.BOTTOM,
       verticalOffset: 12,
@@ -127,9 +127,6 @@ export class SearchAlertsMessage extends Component {
 
     this.startCloseDelay();
 
-    this.message.on('mouseleave', () => {
-      this.startCloseDelay();
-    });
     this.message.on('mouseenter', () => {
       this.stopCloseDelay();
     });

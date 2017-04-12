@@ -8,7 +8,7 @@ import { l } from '../../strings/Strings';
 import { QueryStateModel } from '../../models/QueryStateModel';
 import { IAnalyticsFacetMeta, analyticsActionCauseList } from '../Analytics/AnalyticsActionListMeta';
 import { DeviceUtils } from '../../utils/DeviceUtils';
-import { PopupUtils, HorizontalAlignment, VerticalAlignment } from '../../utils/PopupUtils';
+import { PopUp, HorizontalAlignment, VerticalAlignment } from '../../utils/PopUp';
 import * as _ from 'underscore';
 import 'styling/_FacetSettings';
 
@@ -36,6 +36,7 @@ export class FacetSettings extends FacetSort {
   private settingsPopup: HTMLElement;
   private settingsIcon: HTMLElement;
   private settingsButton: HTMLElement;
+  private popUp: PopUp;
   private directionSection: HTMLElement[];
   private saveStateSection: HTMLElement;
   private clearStateSection: HTMLElement;
@@ -66,6 +67,8 @@ export class FacetSettings extends FacetSort {
     this.settingsButton.appendChild(this.settingsIcon);
 
     this.settingsPopup = $$('div', { className: 'coveo-facet-settings-popup' }).el;
+
+    this.popUp = new PopUp(this.settingsPopup, this.facet.root, this.settingsButton);
 
     if (Utils.isNonEmptyArray(this.enabledSorts)) {
       this.sortSection = this.buildSortSection();
@@ -157,8 +160,7 @@ export class FacetSettings extends FacetSort {
    * Open the settings menu
    */
   public open() {
-    PopupUtils.positionPopup(
-      this.settingsPopup,
+    this.popUp.positionPopup(
       this.settingsButton,
       this.facet.root,
       this.getPopupAlignment(), this.facet.root);
@@ -454,20 +456,6 @@ export class FacetSettings extends FacetSort {
   private handleMouseEventOnButton(sortSection: { element: HTMLElement; sortItems: HTMLElement[] }) {
     var closeTimeout: number;
     $$(this.settingsButton).on('click', (e: Event) => this.handleClickSettingsButtons(e, sortSection));
-
-    var mouseLeave = () => {
-      closeTimeout = setTimeout(() => {
-        this.close();
-      }, 300);
-    };
-    var mouseEnter = () => {
-      clearTimeout(closeTimeout);
-    };
-
-    $$(this.settingsIcon).on('mouseleave', mouseLeave);
-    $$(this.settingsPopup).on('mouseleave', mouseLeave);
-    $$(this.settingsIcon).on('mouseenter', mouseEnter);
-    $$(this.settingsPopup).on('mouseenter', mouseEnter);
   }
 
   public getCurrentDirectionItem(directionSection = this.directionSection) {

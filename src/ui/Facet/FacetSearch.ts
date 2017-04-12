@@ -12,7 +12,7 @@ import { IAnalyticsFacetMeta, analyticsActionCauseList } from '../Analytics/Anal
 import { IEndpointError } from '../../rest/EndpointError';
 import { Component } from '../Base/Component';
 import { DomUtils } from '../../utils/DomUtils';
-import { PopupUtils, HorizontalAlignment, VerticalAlignment } from '../../utils/PopupUtils';
+import { PopUp, HorizontalAlignment, VerticalAlignment } from '../../utils/PopUp';
 import { l } from '../../strings/Strings';
 import { Assert } from '../../misc/Assert';
 import { KEYBOARD } from '../../utils/KeyboardUtils';
@@ -50,9 +50,11 @@ export class FacetSearch {
   private onDocumentClick: (e: Event) => void;
   private searchBarIsAnimating: boolean = false;
   private lastSearchWasEmpty = true;
+  private popUp: PopUp;
 
   constructor(public facet: Facet, public facetSearchValuesListKlass: IFacetSearchValuesListKlass, private root: HTMLElement) {
     this.searchResults = document.createElement('ul');
+    this.popUp = new PopUp(this.searchResults, this.root, null, null, false);
     $$(this.searchResults).addClass('coveo-facet-search-results');
     this.onResize = _.debounce(() => {
       // Mitigate issues in UT where the window in phantom js might get resized in the scope of another test.
@@ -105,15 +107,14 @@ export class FacetSearch {
         if ($$(this.searchResults).css('display') == 'none') {
           this.searchResults.style.display = '';
         }
-        let self = this;
-        EventsUtils.addPrefixedEvent(this.search, 'AnimationEnd', function (evt) {
-          PopupUtils.positionPopup(self.searchResults, nextTo, self.root,
+        EventsUtils.addPrefixedEvent(this.search, 'AnimationEnd', (evt) => {
+          this.popUp.positionPopup(nextTo, this.root,
             { horizontal: HorizontalAlignment.CENTER, vertical: VerticalAlignment.BOTTOM }
           );
-          EventsUtils.removePrefixedEvent(self.search, 'AnimationEnd', this);
+          EventsUtils.removePrefixedEvent(this.search, 'AnimationEnd', this);
         });
       } else {
-        PopupUtils.positionPopup(this.searchResults, nextTo, this.root,
+        this.popUp.positionPopup(nextTo, this.root,
           { horizontal: HorizontalAlignment.CENTER, vertical: VerticalAlignment.BOTTOM }
         );
       }

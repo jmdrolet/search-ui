@@ -12,7 +12,7 @@ export { HTMLUtils } from './utils/HtmlUtils';
 export { KEYBOARD, KeyboardUtils } from './utils/KeyboardUtils';
 export { LocalStorageUtils } from './utils/LocalStorageUtils';
 export { OSUtils, OS_NAME } from './utils/OSUtils';
-export { PopupUtils } from './utils/PopupUtils';
+export { PopUp } from './utils/PopUp';
 export { QueryUtils } from './utils/QueryUtils';
 export { StreamHighlightUtils } from './utils/StreamHighlightUtils';
 export { StringUtils } from './utils/StringUtils';

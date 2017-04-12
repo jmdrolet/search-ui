@@ -1,6 +1,6 @@
 import { $$, Dom } from '../../utils/Dom';
 import { InitializationEvents } from '../../events/InitializationEvents';
-import { PopupUtils, HorizontalAlignment, VerticalAlignment } from '../../utils/PopupUtils';
+import { PopUp, HorizontalAlignment, VerticalAlignment } from '../../utils/PopUp';
 import { EventsUtils } from '../../utils/EventsUtils';
 import { Utils } from '../../utils/Utils';
 import { Logger } from '../../misc/Logger';
@@ -29,6 +29,7 @@ export class ResponsiveTabs implements IResponsiveComponent {
   private documentClickListener: EventListener;
   private searchInterface: SearchInterface;
   private dropdownHeaderLabel: string;
+  private popUp: PopUp;
 
   constructor(private coveoRoot: Dom, public ID: string) {
     this.dropdownHeaderLabel = this.getDropdownHeaderLabel();
@@ -36,6 +37,8 @@ export class ResponsiveTabs implements IResponsiveComponent {
     this.searchBoxElement = this.getSearchBoxElement();
     this.dropdownContent = this.buildDropdownContent();
     this.dropdownHeader = this.buildDropdownHeader();
+    this.popUp = new PopUp(this.dropdownContent.el, this.dropdownHeader.el, this.coveoRoot.el);
+
     this.bindDropdownContentEvents();
     this.bindDropdownHeaderEvents();
     this.tabSection = $$(<HTMLElement>this.coveoRoot.find('.coveo-tab-section'));
@@ -338,7 +341,7 @@ export class ResponsiveTabs implements IResponsiveComponent {
   }
 
   private positionPopup() {
-    PopupUtils.positionPopup(this.dropdownContent.el, this.dropdownHeader.el, this.coveoRoot.el,
+    this.popUp.positionPopup(this.dropdownHeader.el, this.coveoRoot.el,
       { horizontal: HorizontalAlignment.INNERRIGHT, vertical: VerticalAlignment.BOTTOM }, this.coveoRoot.el);
   }
 
