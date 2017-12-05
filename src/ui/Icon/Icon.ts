@@ -32,23 +32,22 @@ export class Icon extends Component {
 
   static doExport = () => {
     exportGlobally({
-      'Icon': Icon
+      Icon: Icon
     });
-  }
+  };
 
   /**
    * The options for the Icon
    * @componentOptions
    */
   static options: IIconOptions = {
-
     /**
      * Specifies the value that the Icon component should output as its CSS class instead of the auto-selected value.
      *
      * Default value is `undefined`, which means that the Coveo JavaScript Search Framework outputs a suitable icon
      * depending on the result file type.
      */
-    value: ComponentOptions.buildIconOption(),
+    value: ComponentOptions.buildStringOption(),
 
     /**
      * Specifies whether the Icon component should output the smaller version of the icon instead of the regular one.
@@ -109,7 +108,6 @@ export class Icon extends Component {
   static createIcon(result: IQueryResult, options: IIconOptions = {}, element: HTMLElement = $$('div').el, bindings?: IComponentBindings) {
     var info = FileTypes.get(result);
 
-
     if (!bindings && result.searchInterface) {
       // try to resolve results bindings automatically
       bindings = result.searchInterface.getBindings();
@@ -133,9 +131,15 @@ export class Icon extends Component {
     element.setAttribute('title', info.caption);
 
     if (Icon.shouldDisplayLabel(options, bindings)) {
-      element.appendChild($$('span', {
-        className: 'coveo-icon-caption-overlay'
-      }, info.caption).el);
+      element.appendChild(
+        $$(
+          'span',
+          {
+            className: 'coveo-icon-caption-overlay'
+          },
+          info.caption
+        ).el
+      );
       $$(element).addClass('coveo-icon-with-caption-overlay');
       $$(element).setAttribute('data-with-label', 'true');
     }
@@ -143,13 +147,12 @@ export class Icon extends Component {
   }
 
   static shouldDisplayLabel(options: IIconOptions, bindings: IComponentBindings) {
-    // Display only in new design.
     // If withLabel is explicitely set to false, the label will never display
     // If withLabel is explicitely set to true, the label will always display
     // If withLabel is set to default value (not a hard true or false), the label will display based on ./core/filetypes/**.json
     // with the property shouldDisplayLabel set on each file type/ objecttype
     // In this case, the generated css will take care of outputting the correct css to display : block
-    return bindings && bindings.searchInterface.isNewDesign() && options.withLabel !== false;
+    return options.withLabel !== false;
   }
 
   static preprocessIconInfo(options: IIconOptions, info: IFileTypeInfo) {

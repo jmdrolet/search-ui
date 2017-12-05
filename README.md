@@ -2,7 +2,7 @@
 
 Coveo JavaScript Search UI Framework
 
-<img id='readme-image' src='./readme.png' />
+<img id='readme-image' src='https://raw.githubusercontent.com/coveo/search-ui/master/readme.png' />
 
 ## Installation
 
@@ -10,10 +10,9 @@ You should install the Coveo JavaScript Search UI Framework as an npm package:
 
     npm install --save coveo-search-ui
 
-All resources will be available under `node_modules/coveo-search-ui/bin`. You can include those in your pages with 
-`<script>` tags.
+All resources will be available under `node_modules/coveo-search-ui/bin`. You can include those in your pages with `<script>` tags. This will make the variable `Coveo` globally available in your page.
 
-If you are using a module bundler (Browserify, webpack, Babel, etc.), you can use `require('coveo-search-ui')`.
+If you are using a module bundler (Browserify, Webpack, rollup, etc.), you can use `require('coveo-search-ui')` or `import * as Coveo from 'coveo-search-ui'`.
 
 Alternatively, you can download the latest version of the Coveo JavaScript Search UI Framework 
 [here](http://productupdate.coveo.com/?product=coveo-search-ui&version=1).
@@ -49,7 +48,7 @@ you require.
 ```
 <!-- Include the library scripts. -->
 <script src="js/CoveoJsSearch.js"></script>
-<script src="js/templates/templatesNew.js"></script>
+<script src="js/templates/templates.js"></script>
 
 <!-- Each DOM element with a class starting with "Coveo" (uppercase) will instantiate a component. -->
 <body id="search" class='CoveoSearchInterface'>
@@ -81,7 +80,7 @@ you require.
 You can find more examples of fully configured pages in the `./pages` folder.
 
 A tutorial is available to help you get started (see 
-[Coveo JavaScript Search UI Framework V1 Getting Started Tutorial](https://developers.coveo.com/x/J4okAg)).
+[Coveo JavaScript Search UI Framework Getting Started Tutorial](https://developers.coveo.com/x/J4okAg)).
 
 ## Build
 
@@ -112,35 +111,16 @@ Make sure you were able to run `gulp` entirely without any errors first. Then yo
 This will start a webpack-dev-server instance (see 
 [Webpack Dev Server](https://webpack.github.io/docs/webpack-dev-server.html)).
 
-You can now load [http://localhost:8080/Index.html](http://localhost:8080/Index.html) in a web browser.
+You can now load [http://localhost:8080/index.html](http://localhost:8080/index.html) in a web browser.
 
 Any time you hit **Save** in a source file, the bundle will be recompiled and the dev page will reload.
 
 If you need to modify the content of the search page (i.e., the markup itself, not the TypeScript code), modify the 
-`Index.html` page under `./bin`. This page is not committed to the repository, so you do not have to worry about 
-breaking anything. However, if you feel like you have a good reason to modify the original `Index.html`, feel free to 
+`index.html` page under `./bin`. This page is not committed to the repository, so you do not have to worry about 
+breaking anything. However, if you feel like you have a good reason to modify the original `index.html`, feel free to 
 do so.
 
-<h2 class="home-section-with-ordered-list">Build a Custom Version of the Library</h2>
-
-For advanced users and people concerned with loading speed in their integration, there is a way to compile a completely 
-customized version of the library by including only the components you wish to use.
-
-A classic use case would be to want to display only a search box with a minimal result list, with no facets, tabs, or 
-any other more "advanced" components.
-
-By building a bundle with only those components, you can substantially cut down on the size of the resulting JavaScript 
-code, since any code related to components which you do not use will be removed.
-
-1. Install Plop globally with `npm install -g plop` (see [Plop](https://github.com//amwmedia/plop)).
-2. Navigate to the `./plop` folder.
-3. Run `plop` to automatically start the small command line utility.
-4. Choose the **Create a new bundle** option.
-5. Select the components you wish to include in your bundle.
-6. Run `node plop.build.js` to compile the file which will be created under `./bin/`.
-6. Once compilation is done, your new bundle should be available as `./bin/CoveoJsSearch.Custom.js`.
-
-<h3 class="home-section-with-ordered-list">I Want to Add a New Component!</h2> 
+<h3 class="home-section-with-ordered-list">I Want to Add a New Component!</h3> 
 
 1. Fork the `coveo/search-ui` repository.
 2. Install Plop globally with `npm install -g plop`.

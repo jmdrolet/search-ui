@@ -5,10 +5,7 @@
     "fieldsToMatch": [
       {
         "field": "objecttype",
-        "values": [
-          "FeedItem",
-          "FeedComment"
-        ]
+        "values": ["FeedItem", "FeedComment"]
       }
     ]
   },
@@ -18,10 +15,7 @@
     "fieldsToMatch": [
       {
         "field": "objecttype",
-        "values": [
-          "FeedItem",
-          "FeedComment"
-        ]
+        "values": ["FeedItem", "FeedComment"]
       }
     ]
   },
@@ -31,9 +25,7 @@
     "fieldsToMatch": [
       {
         "field": "connectortype",
-        "values": [
-          "DropboxCrawler"
-        ]
+        "values": ["DropboxCrawler"]
       }
     ]
   },
@@ -43,9 +35,7 @@
     "fieldsToMatch": [
       {
         "field": "connectortype",
-        "values": [
-          "DropboxCrawler"
-        ]
+        "values": ["DropboxCrawler"]
       }
     ]
   },
@@ -109,9 +99,7 @@
     "fieldsToMatch": [
       {
         "field": "connectortype",
-        "values": [
-          "GoogleDriveCrawler"
-        ]
+        "values": ["GoogleDriveCrawler"]
       }
     ]
   },
@@ -121,9 +109,7 @@
     "fieldsToMatch": [
       {
         "field": "connectortype",
-        "values": [
-          "GoogleDriveCrawler"
-        ]
+        "values": ["GoogleDriveCrawler"]
       }
     ]
   },
@@ -133,9 +119,7 @@
     "fieldsToMatch": [
       {
         "field": "connectortype",
-        "values": [
-          "JiraCrawler"
-        ]
+        "values": ["JiraCrawler"]
       }
     ]
   },
@@ -145,9 +129,7 @@
     "fieldsToMatch": [
       {
         "field": "connectortype",
-        "values": [
-          "LithiumCrawler"
-        ]
+        "values": ["LithiumCrawler"]
       }
     ]
   },
@@ -157,9 +139,7 @@
     "fieldsToMatch": [
       {
         "field": "connectortype",
-        "values": [
-          "LithiumCrawler"
-        ]
+        "values": ["LithiumCrawler"]
       }
     ]
   },
@@ -182,10 +162,11 @@
     ]
   },
   "CardSalesforceCase": {
-    "priority": 3,
+    "priority": 4,
     "fieldsToMatch": [
       {
-        "field": "sfcaseid"
+        "field": "objecttype",
+        "values": ["Case"]
       }
     ],
     "layout": "card"
@@ -194,7 +175,18 @@
     "priority": 2,
     "fieldsToMatch": [
       {
-        "field": "sfcaseid"
+        "field": "objecttype",
+        "values": ["Case"]
+      }
+    ],
+    "layout": "list"
+  },
+  "SalesforceCaseComment": {
+    "priority": 3,
+    "fieldsToMatch": [
+      {
+        "field": "objecttype",
+        "values": ["CaseComment"]
       }
     ],
     "layout": "list"
@@ -240,9 +232,7 @@
     "fieldsToMatch": [
       {
         "field": "spitemtype",
-        "values": [
-          "List"
-        ]
+        "values": ["List"]
       }
     ],
     "layout": "card"
@@ -252,9 +242,7 @@
     "fieldsToMatch": [
       {
         "field": "spitemtype",
-        "values": [
-          "List"
-        ]
+        "values": ["List"]
       }
     ],
     "layout": "list"
@@ -264,45 +252,37 @@
     "fieldsToMatch": [
       {
         "field": "filetype",
-        "values": [
-          "YoutubeVideo"
-        ]
+        "values": ["YoutubeVideo"]
       }
     ],
     "layout": "card"
   },
-  "YouTubeVideo" : {
+  "YouTubeVideo": {
     "priority": 1,
     "fieldsToMatch": [
       {
         "field": "filetype",
-        "values": [
-          "YouTubeVideo"
-        ]
+        "values": ["YouTubeVideo"]
       }
     ],
     "layout": "list"
   },
-  "CardYouTubePlaylistItem" : {
+  "CardYouTubePlaylistItem": {
     "priority": 2,
     "fieldsToMatch": [
       {
         "field": "filetype",
-        "values": [
-          "YouTubePlaylistItem"
-        ]
+        "values": ["YouTubePlaylistItem"]
       }
     ],
     "layout": "card"
   },
-  "YouTubePlaylistItem" : {
+  "YouTubePlaylistItem": {
     "priority": 1,
     "fieldsToMatch": [
       {
         "field": "filetype",
-        "values": [
-          "YouTubePlaylistItem"
-        ]
+        "values": ["YouTubePlaylistItem"]
       }
     ],
     "layout": "list"
@@ -312,9 +292,7 @@
     "fieldsToMatch": [
       {
         "field": "connectortype",
-        "values": [
-          "SlackCrawler"
-        ]
+        "values": ["SlackCrawler"]
       }
     ],
     "layout": "card"
@@ -324,24 +302,57 @@
     "fieldsToMatch": [
       {
         "field": "connectortype",
-        "values": [
-          "SlackCrawler"
-        ]
+        "values": ["SlackCrawler"]
       }
     ],
     "layout": "list"
   },
+  "CardConfluence": {
+    "priority": 2,
+    "layout": "card",
+    "fieldsToMatch": [
+      {
+        "field": "connectortype",
+        "values": ["Confluence2Crawler"]
+      }
+    ]
+  },
+  "Confluence": {
+    "priority": 1,
+    "layout": "list",
+    "fieldsToMatch": [
+      {
+        "field": "connectortype",
+        "values": ["Confluence2Crawler"]
+      }
+    ]
+  },
+  "CardRSS": {
+    "priority": 2,
+    "layout": "card",
+    "fieldsToMatch": [
+      {
+        "field": "filetype",
+        "values": ["rssitem"]
+      }
+    ]
+  },
+  "RSS": {
+    "priority": 1,
+    "layout": "list",
+    "fieldsToMatch": [
+      {
+        "field": "filetype",
+        "values": ["rssitem", "rssfeed"]
+      }
+    ]
+  },
   "Card": {
     "priority": 1,
     "layout": "card"
-  },
-  "Table": {
-    "priority": 4,
-    "layout": "table"
   },
   "Default": {
     "priority": 0,
     "layout": "list"
   }
 }
-

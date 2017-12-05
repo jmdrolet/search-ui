@@ -13,19 +13,17 @@ import { ISubscription } from '../../src/rest/Subscription';
 import { AjaxError } from '../../src/rest/AjaxError';
 import _ = require('underscore');
 
-
 export function SearchEndpointTest() {
-  describe('SearchEndpoint', function () {
-
-    beforeEach(function () {
+  describe('SearchEndpoint', () => {
+    beforeEach(() => {
       SearchEndpoint.endpoints = {};
     });
 
-    afterEach(function () {
+    afterEach(() => {
       SearchEndpoint.endpoints = {};
     });
 
-    it('allow to setup easily a search endpoint to point to a sample endpoint', function () {
+    it('allow to setup easily a search endpoint to point to a sample endpoint', () => {
       SearchEndpoint.configureSampleEndpoint();
       const ep: SearchEndpoint = SearchEndpoint.endpoints['default'];
       expect(ep).toBeDefined();
@@ -33,7 +31,7 @@ export function SearchEndpointTest() {
       expect(ep.options.restUri).toBeDefined();
     });
 
-    it('allow to setup easily a cloud endpoint', function () {
+    it('allow to setup easily a cloud endpoint', () => {
       SearchEndpoint.configureCloudEndpoint('foo', 'bar');
       const ep: SearchEndpoint = SearchEndpoint.endpoints['default'];
       expect(ep).toBeDefined();
@@ -41,17 +39,17 @@ export function SearchEndpointTest() {
       expect(ep.options.queryStringArguments['organizationId']).toBe('foo');
     });
 
-    it('allow to setup easily a on prem endpoint', function () {
+    it('allow to setup easily a on prem endpoint', () => {
       SearchEndpoint.configureOnPremiseEndpoint('foo.com');
       const ep: SearchEndpoint = SearchEndpoint.endpoints['default'];
       expect(ep).toBeDefined();
       expect(ep.options.restUri).toBe('foo.com');
     });
 
-    describe('with a workgroup argument', function () {
+    describe('with a workgroup argument', () => {
       let ep: SearchEndpoint;
 
-      beforeEach(function () {
+      beforeEach(() => {
         ep = new SearchEndpoint({
           restUri: 'foo/rest/search',
           queryStringArguments: {
@@ -60,20 +58,20 @@ export function SearchEndpointTest() {
         });
       });
 
-      afterEach(function () {
+      afterEach(() => {
         ep = null;
       });
 
-      it('should not map it to organizationId', function () {
+      it('should not map it to organizationId', () => {
         const fakeResult = FakeResults.createFakeResult();
         expect(ep.getViewAsHtmlUri(fakeResult.uniqueId)).toBe(ep.getBaseUri() + '/html?workgroup=myOrgId&uniqueId=' + fakeResult.uniqueId);
       });
     });
 
-    describe('with an orgaganizationId argument', function () {
+    describe('with an orgaganizationId argument', () => {
       let ep: SearchEndpoint;
 
-      beforeEach(function () {
+      beforeEach(() => {
         ep = new SearchEndpoint({
           restUri: 'foo/rest/search',
           queryStringArguments: {
@@ -82,27 +80,29 @@ export function SearchEndpointTest() {
         });
       });
 
-      afterEach(function () {
+      afterEach(() => {
         ep = null;
       });
 
-      it('should not map it to workgroup', function () {
+      it('should not map it to workgroup', () => {
         const fakeResult = FakeResults.createFakeResult();
-        expect(ep.getViewAsHtmlUri(fakeResult.uniqueId)).toBe(ep.getBaseUri() + '/html?organizationId=myOrgId&uniqueId=' + fakeResult.uniqueId);
+        expect(ep.getViewAsHtmlUri(fakeResult.uniqueId)).toBe(
+          ep.getBaseUri() + '/html?organizationId=myOrgId&uniqueId=' + fakeResult.uniqueId
+        );
       });
     });
 
-    describe('with a search token argument', function () {
+    describe('with a search token argument', () => {
       let ep: SearchEndpoint;
 
-      beforeEach(function () {
+      beforeEach(() => {
         ep = new SearchEndpoint({
           restUri: 'foo/rest/search',
           accessToken: 'token'
         });
       });
 
-      afterEach(function () {
+      afterEach(() => {
         ep = null;
       });
 
@@ -112,10 +112,10 @@ export function SearchEndpointTest() {
       });
     });
 
-    describe('with a basic setup', function () {
+    describe('with a basic setup', () => {
       let ep: SearchEndpoint;
 
-      beforeEach(function () {
+      beforeEach(() => {
         ep = new SearchEndpoint({
           restUri: 'foo/rest/search',
           accessToken: 'token',
@@ -126,15 +126,15 @@ export function SearchEndpointTest() {
         });
       });
 
-      afterEach(function () {
+      afterEach(() => {
         ep = null;
       });
 
-      it('allow to get the base uri', function () {
+      it('allow to get the base uri', () => {
         expect(ep.getBaseUri()).toBe('foo/rest/search/v2');
       });
 
-      it('allow to get the auth provider uri', function () {
+      it('allow to get the auth provider uri', () => {
         expect(ep.getAuthenticationProviderUri('ad')).toContain(ep.getBaseUri() + '/login/ad?');
         expect(ep.getAuthenticationProviderUri('ad')).toContain('organizationId=myOrgId');
         expect(ep.getAuthenticationProviderUri('ad')).toContain('potatoe=mashed');
@@ -148,11 +148,11 @@ export function SearchEndpointTest() {
         expect(ep.getAuthenticationProviderUri('troll', undefined, 'msg')).toContain('message=msg');
       });
 
-      it('allow to check if endpoint is jsonp', function () {
+      it('allow to check if endpoint is jsonp', () => {
         expect(ep.isJsonp()).toBe(false);
       });
 
-      it('allow to get an export to excel link', function () {
+      it('allow to get an export to excel link', () => {
         const qbuilder = new QueryBuilder();
         qbuilder.expression.add('batman');
         expect(ep.getExportToExcelLink(qbuilder.build(), 56)).toContain(ep.getBaseUri() + '/?');
@@ -163,7 +163,43 @@ export function SearchEndpointTest() {
         expect(ep.getExportToExcelLink(qbuilder.build(), 56)).toContain('format=xlsx');
       });
 
-      it('allow to get an uri to view as datastream', function () {
+      it('allow to get an export to excel link with a context', () => {
+        const qbuilder = new QueryBuilder();
+        qbuilder.addContext({
+          foo: 'bar'
+        });
+        expect(ep.getExportToExcelLink(qbuilder.build(), 56)).toContain('context[foo]=bar');
+      });
+
+      it('allow to get an export to excel link with context encoded', () => {
+        const qbuilder = new QueryBuilder();
+        qbuilder.addContext({
+          'foo bar': 'buzz bazz'
+        });
+        expect(ep.getExportToExcelLink(qbuilder.build(), 56)).toContain(
+          `context[foo${encodeURIComponent(' ')}bar]=buzz${encodeURIComponent(' ')}bazz`
+        );
+      });
+
+      it('allow to get an export to excel link with a context array', () => {
+        const qbuilder = new QueryBuilder();
+        qbuilder.addContext({
+          foo: ['buzz', 'bazz']
+        });
+        expect(ep.getExportToExcelLink(qbuilder.build(), 56)).toContain(`context[foo]=buzz${encodeURIComponent(',')}bazz`);
+      });
+
+      it('allow to get an export to excel link with a context with multiple values', () => {
+        const qbuilder = new QueryBuilder();
+        qbuilder.addContext({
+          foo: 'bar',
+          bazz: 'buzz'
+        });
+        expect(ep.getExportToExcelLink(qbuilder.build(), 56)).toContain('context[foo]=bar');
+        expect(ep.getExportToExcelLink(qbuilder.build(), 56)).toContain('context[bazz]=buzz');
+      });
+
+      it('allow to get an uri to view as datastream', () => {
         const fakeResult = FakeResults.createFakeResult();
         expect(ep.getViewAsDatastreamUri(fakeResult.uniqueId, '$Thumbnail')).toContain(ep.getBaseUri() + '/datastream?');
         expect(ep.getViewAsDatastreamUri(fakeResult.uniqueId, '$Thumbnail')).toContain('organizationId=myOrgId');
@@ -172,7 +208,7 @@ export function SearchEndpointTest() {
         expect(ep.getViewAsDatastreamUri(fakeResult.uniqueId, '$Thumbnail')).toContain('dataStream=' + encodeURIComponent('$Thumbnail'));
       });
 
-      it('allow to get an uri to view as html', function () {
+      it('allow to get an uri to view as html', () => {
         const fakeResult = FakeResults.createFakeResult();
         expect(ep.getViewAsHtmlUri(fakeResult.uniqueId)).toContain(ep.getBaseUri() + '/html?');
         expect(ep.getViewAsHtmlUri(fakeResult.uniqueId)).toContain('organizationId=myOrgId');
@@ -180,17 +216,17 @@ export function SearchEndpointTest() {
         expect(ep.getViewAsHtmlUri(fakeResult.uniqueId)).toContain('uniqueId=' + fakeResult.uniqueId);
       });
 
-      describe('will execute requests on the search api', function () {
-        beforeEach(function () {
+      describe('will execute requests on the search api', () => {
+        beforeEach(() => {
           jasmine.Ajax.install();
         });
 
-        afterEach(function () {
+        afterEach(() => {
           jasmine.Ajax.uninstall();
           ep.reset();
         });
 
-        it('for search', (done) => {
+        it('for search', done => {
           const qbuilder = new QueryBuilder();
           qbuilder.expression.add('batman');
           qbuilder.numberOfResults = 153;
@@ -202,11 +238,11 @@ export function SearchEndpointTest() {
           expect(jasmine.Ajax.requests.mostRecent().params).toContain('q=batman');
           expect(jasmine.Ajax.requests.mostRecent().params).toContain('numberOfResults=153');
           expect(jasmine.Ajax.requests.mostRecent().params).toContain('enableCollaborativeRating=true');
+          expect(jasmine.Ajax.requests.mostRecent().params).toContain('actionsHistory=');
           expect(jasmine.Ajax.requests.mostRecent().method).toBe('POST');
-          promiseSuccess
-            .then((data: IQueryResults) => {
-              expect(data.results.length).toBe(10);
-            });
+          promiseSuccess.then((data: IQueryResults) => {
+            expect(data.results.length).toBe(10);
+          });
           jasmine.Ajax.requests.mostRecent().respondWith({
             status: 200,
             responseText: JSON.stringify(FakeResults.createFakeResults())
@@ -229,7 +265,15 @@ export function SearchEndpointTest() {
           });
         });
 
-        it('for getRawDataStream', (done) => {
+        it('should not override actions history if specified manually on a search call', () => {
+          const qbuilder = new QueryBuilder();
+          const historyAsString = JSON.stringify([{ name: 'foo', value: 'bar' }]);
+          qbuilder.actionsHistory = historyAsString;
+          ep.search(qbuilder.build());
+          expect(jasmine.Ajax.requests.mostRecent().params).toContain(`actionsHistory=${encodeURIComponent(historyAsString)}`);
+        });
+
+        it('for getRawDataStream', done => {
           const fakeResult = FakeResults.createFakeResult();
           const promiseSuccess = ep.getRawDataStream(fakeResult.uniqueId, '$Thumbnail');
           expect(jasmine.Ajax.requests.mostRecent().url).toContain(ep.getBaseUri() + '/datastream?');
@@ -257,7 +301,7 @@ export function SearchEndpointTest() {
           });
         });
 
-        it('for getDocument', (done) => {
+        it('for getDocument', done => {
           const fakeResult = FakeResults.createFakeResult();
           const promiseSuccess = ep.getDocument(fakeResult.uniqueId);
           expect(jasmine.Ajax.requests.mostRecent().url).toContain(ep.getBaseUri() + '/document?');
@@ -284,7 +328,7 @@ export function SearchEndpointTest() {
           });
         });
 
-        it('for getDocumentText', (done) => {
+        it('for getDocumentText', done => {
           const fakeResult = FakeResults.createFakeResult();
           const promiseSuccess = ep.getDocumentText(fakeResult.uniqueId);
           expect(jasmine.Ajax.requests.mostRecent().url).toContain(ep.getBaseUri() + '/text?');
@@ -311,7 +355,7 @@ export function SearchEndpointTest() {
           });
         });
 
-        it('for getDocumentHtml', (done) => {
+        it('for getDocumentHtml', done => {
           const fakeResult = FakeResults.createFakeResult();
           const fakeDocument = document.implementation.createHTMLDocument(fakeResult.title);
           const promiseSuccess = ep.getDocumentHtml(fakeResult.uniqueId);
@@ -339,7 +383,7 @@ export function SearchEndpointTest() {
           });
         });
 
-        it('for listFieldValues', (done) => {
+        it('for listFieldValues', done => {
           const request: IListFieldValuesRequest = {
             field: '@field',
             maximumNumberOfValues: 153,
@@ -374,7 +418,7 @@ export function SearchEndpointTest() {
           });
         });
 
-        it('for listFields', (done) => {
+        it('for listFields', done => {
           const promiseSuccess = ep.listFields();
           expect(jasmine.Ajax.requests.mostRecent().url).toContain(ep.getBaseUri() + '/fields?');
           expect(jasmine.Ajax.requests.mostRecent().url).toContain('organizationId=myOrgId');
@@ -401,7 +445,7 @@ export function SearchEndpointTest() {
           });
         });
 
-        it('for extensions', (done) => {
+        it('for extensions', done => {
           const promiseSuccess = ep.extensions();
           expect(jasmine.Ajax.requests.mostRecent().url).toContain(ep.getBaseUri() + '/extensions?');
           expect(jasmine.Ajax.requests.mostRecent().url).toContain('organizationId=myOrgId');
@@ -428,7 +472,7 @@ export function SearchEndpointTest() {
           });
         });
 
-        it('for rateDocument', (done) => {
+        it('for rateDocument', done => {
           const fakeResult = FakeResults.createFakeResult();
           const promiseSuccess = ep.rateDocument({
             rating: 'Best',
@@ -456,14 +500,13 @@ export function SearchEndpointTest() {
           });
         });
 
-        it('for tagDocument', (done) => {
+        it('for tagDocument', done => {
           const fakeResult = FakeResults.createFakeResult();
           const promiseSuccess = ep.tagDocument({
             uniqueId: fakeResult.uniqueId,
             doAdd: true,
             fieldName: '@field',
-            fieldValue: 'foobar',
-
+            fieldValue: 'foobar'
           });
           expect(jasmine.Ajax.requests.mostRecent().url).toContain(ep.getBaseUri() + '/tag?');
           expect(jasmine.Ajax.requests.mostRecent().url).toContain('organizationId=myOrgId');
@@ -492,18 +535,20 @@ export function SearchEndpointTest() {
           });
         });
 
-        it('for getQuerySuggest', (done) => {
+        it('for getQuerySuggest', done => {
           const promiseSuccess = ep.getQuerySuggest({
             q: 'foobar',
             count: 10
           });
 
           expect(jasmine.Ajax.requests.mostRecent().url).toContain(ep.getBaseUri() + '/querySuggest?');
-          expect(jasmine.Ajax.requests.mostRecent().url).toContain('q=foobar');
-          expect(jasmine.Ajax.requests.mostRecent().url).toContain('count=10');
           expect(jasmine.Ajax.requests.mostRecent().url).toContain('organizationId=myOrgId');
           expect(jasmine.Ajax.requests.mostRecent().url).toContain('potatoe=mashed');
-          expect(jasmine.Ajax.requests.mostRecent().method).toBe('GET');
+
+          expect(jasmine.Ajax.requests.mostRecent().params).toContain('q=foobar');
+          expect(jasmine.Ajax.requests.mostRecent().params).toContain('count=10');
+          expect(jasmine.Ajax.requests.mostRecent().params).toContain('actionsHistory=');
+          expect(jasmine.Ajax.requests.mostRecent().method).toBe('POST');
 
           // Not real extensions, but will suffice for test purpose
           promiseSuccess
@@ -523,14 +568,14 @@ export function SearchEndpointTest() {
           });
         });
 
-        it('for backward compatible query suggest call', (done) => {
+        it('for backward compatible query suggest call', done => {
           const promiseSuccess = ep.getRevealQuerySuggest({
             q: 'foobar',
             count: 10
           });
 
           expect(jasmine.Ajax.requests.mostRecent().url).toContain(ep.getBaseUri() + '/querySuggest?');
-          expect(jasmine.Ajax.requests.mostRecent().url).toContain('q=foobar');
+          expect(jasmine.Ajax.requests.mostRecent().params).toContain('q=foobar');
 
           // Not real extensions, but will suffice for test purpose
           promiseSuccess
@@ -550,7 +595,7 @@ export function SearchEndpointTest() {
           });
         });
 
-        it('for follow', (done) => {
+        it('for follow', done => {
           const qbuilder = new QueryBuilder();
           qbuilder.expression.add('batman');
           const promiseSuccess = ep.follow({
@@ -592,7 +637,7 @@ export function SearchEndpointTest() {
           });
         });
 
-        it('for listSubscriptions', (done) => {
+        it('for listSubscriptions', done => {
           const promiseSuccess = ep.listSubscriptions(15);
           promiseSuccess
             .then((subs: ISubscription[]) => {
@@ -621,7 +666,7 @@ export function SearchEndpointTest() {
           });
         });
 
-        it('for updateSubscription', (done) => {
+        it('for updateSubscription', done => {
           const promiseSuccess = ep.updateSubscription(getSubscriptionPromiseSuccess());
           promiseSuccess
             .then((sub: ISubscription) => {
@@ -646,7 +691,7 @@ export function SearchEndpointTest() {
           });
         });
 
-        it('for deleteSubscription', (done) => {
+        it('for deleteSubscription', done => {
           const promiseSuccess = ep.deleteSubscription(getSubscriptionPromiseSuccess());
           promiseSuccess
             .then((sub: ISubscription) => {
@@ -671,15 +716,17 @@ export function SearchEndpointTest() {
           });
         });
 
-        it('request can be modified', function () {
+        it('request can be modified', () => {
           ep.setRequestModifier((requestInfo: IRequestInfo<any>) => {
             requestInfo.headers['Potato'] = 'OmgPotatoes';
             return requestInfo;
           });
           ep.search(new QueryBuilder().build());
-          expect(jasmine.Ajax.requests.mostRecent().requestHeaders).toEqual(jasmine.objectContaining({
-            'Potato': 'OmgPotatoes'
-          }));
+          expect(jasmine.Ajax.requests.mostRecent().requestHeaders).toEqual(
+            jasmine.objectContaining({
+              Potato: 'OmgPotatoes'
+            })
+          );
         });
       });
     });

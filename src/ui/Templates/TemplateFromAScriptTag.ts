@@ -1,9 +1,9 @@
-import { Template, IFieldsToMatch } from './Template';
+import { Template, IFieldsToMatch, TemplateRole } from './Template';
 import { Utils } from '../../utils/Utils';
 import { TemplateConditionEvaluator } from './TemplateConditionEvaluator';
 import { ComponentOptions, IComponentOptionsFieldsOption } from '../Base/ComponentOptions';
 import { ValidLayout } from '../ResultLayout/ResultLayout';
-import { $$ } from '../../utils/Dom';
+import { $$, Dom } from '../../utils/Dom';
 import * as _ from 'underscore';
 import { Initialization } from '../Base/Initialization';
 
@@ -14,6 +14,7 @@ export interface ITemplateFromStringProperties {
   tablet?: boolean;
   desktop?: boolean;
   fieldsToMatch?: IFieldsToMatch[];
+  role?: TemplateRole;
 }
 
 export class TemplateFromAScriptTag {
@@ -24,7 +25,7 @@ export class TemplateFromAScriptTag {
       condition = condition.toString().replace(/&quot;/g, '"');
       template.setConditionWithFallback(condition);
     } else {
-      let parsedFieldsAttributes = this.parseFieldsAttributes();
+      const parsedFieldsAttributes = this.parseFieldsAttributes();
       if (parsedFieldsAttributes && Utils.isNonEmptyArray(parsedFieldsAttributes)) {
         this.template.fieldsToMatch = parsedFieldsAttributes;
       }
@@ -36,23 +37,29 @@ export class TemplateFromAScriptTag {
     this.template.desktop = this.parseScreenSize('data-desktop');
     this.template.fields = TemplateConditionEvaluator.getFieldFromString(`${scriptTag.innerHTML} ${condition ? condition : ''}`);
 
+    this.template.role = <TemplateRole>scriptTag.getAttribute('data-role');
+
     this.template.addFields(TemplateConditionEvaluator.getFieldFromString(scriptTag.innerHTML + ' ' + condition) || []);
 
     // Additional fields that might be specified directly on the script element
-    var additionalFields = ComponentOptions.loadFieldsOption(scriptTag, 'fields', <IComponentOptionsFieldsOption>{ includeInResults: true });
+    const additionalFields = ComponentOptions.loadFieldsOption(scriptTag, 'fields', <IComponentOptionsFieldsOption>{
+      includeInResults: true
+    });
     if (additionalFields != null) {
       // remove the @
-      this.template.addFields(_.map(additionalFields, (field) => field.substr(1)));
+      this.template.addFields(_.map(additionalFields, field => field.substr(1)));
     }
 
     // Additional fields that might be used to conditionally load the template when it's going to be rendered.
-    this.template.addFields(_.map(this.template.fieldsToMatch, (toMatch: IFieldsToMatch) => {
-      return toMatch.field;
-    }));
+    this.template.addFields(
+      _.map(this.template.fieldsToMatch, (toMatch: IFieldsToMatch) => {
+        return toMatch.field;
+      })
+    );
 
     // Scan components in this template
     // return the fields needed for the content of this template
-    let neededFieldsForComponents = _.chain(this.template.getComponentsInside(scriptTag.innerHTML))
+    const neededFieldsForComponents = _.chain(this.template.getComponentsInside(scriptTag.innerHTML))
       .map((component: string) => {
         return Initialization.getRegisteredFieldsComponentForQuery(component);
       })
@@ -62,21 +69,23 @@ export class TemplateFromAScriptTag {
     this.template.addFields(neededFieldsForComponents);
   }
 
-  toHtmlElement(): HTMLElement {
-    var script = $$('code');
-    let condition = $$(this.scriptTag).getAttribute('data-condition');
-    if (condition) {
-      script.setAttribute('data-condition', condition);
+  toHtmlElement(container?: Dom): HTMLElement {
+    if (!container) {
+      container = $$('code');
     }
-    script.setHtml(this.scriptTag.innerHTML);
-    return script.el;
+    const condition = $$(this.scriptTag).getAttribute('data-condition');
+    if (condition) {
+      container.setAttribute('data-condition', condition);
+    }
+    container.setHtml(this.scriptTag.innerHTML);
+    return container.el;
   }
 
   parseFieldsAttributes(): IFieldsToMatch[] {
-    let dataSet = this.scriptTag.dataset;
+    const dataSet = this.scriptTag.dataset;
     return _.chain(dataSet)
       .map((value, key: string) => {
-        let match = key.match(/field([a-z0-9]*)/i);
+        const match = key.match(/field([a-z0-9]*)/i);
         if (match) {
           let values;
           if (value != null && value != 'null' && value != '') {
@@ -103,36 +112,41 @@ export class TemplateFromAScriptTag {
     return <ValidLayout>layout;
   }
 
-  static fromString(template: string, properties: ITemplateFromStringProperties = {}): HTMLElement {
-    var script = document.createElement('code');
-    script.innerHTML = template;
+  static fromString(
+    template: string,
+    properties: ITemplateFromStringProperties = {},
+    container = document.createElement('code')
+  ): HTMLElement {
+    container.innerHTML = template;
     if (properties.condition != null) {
-      script.setAttribute('data-condition', properties.condition);
+      container.setAttribute('data-condition', properties.condition);
     }
     if (properties.layout != null) {
-      script.setAttribute('data-layout', properties.layout);
+      container.setAttribute('data-layout', properties.layout);
     } else {
-      script.setAttribute('data-layout', 'list');
+      container.setAttribute('data-layout', 'list');
     }
     if (properties.mobile != null) {
-      script.setAttribute('data-mobile', properties.mobile.toString());
+      container.setAttribute('data-mobile', properties.mobile.toString());
     }
     if (properties.tablet != null) {
-      script.setAttribute('data-tablet', properties.tablet.toString());
+      container.setAttribute('data-tablet', properties.tablet.toString());
     }
     if (properties.desktop != null) {
-      script.setAttribute('data-desktop', properties.desktop.toString());
+      container.setAttribute('data-desktop', properties.desktop.toString());
     }
     if (properties.fieldsToMatch != null) {
       _.each(properties.fieldsToMatch, (fieldToMatch: IFieldsToMatch) => {
         if (fieldToMatch.values) {
-          script.setAttribute(`data-field-${fieldToMatch.field.toLowerCase()}`, fieldToMatch.values.join(','));
+          container.setAttribute(`data-field-${fieldToMatch.field.toLowerCase()}`, fieldToMatch.values.join(','));
         } else {
-          script.setAttribute(`data-field-${fieldToMatch.field.toLowerCase()}`, null);
+          container.setAttribute(`data-field-${fieldToMatch.field.toLowerCase()}`, null);
         }
-
       });
     }
-    return script;
+    if (properties.role != null) {
+      container.setAttribute('data-role', properties.role);
+    }
+    return container;
   }
 }

@@ -1,8 +1,9 @@
+/// <reference path="../lib/jasmine/index.d.ts" />
 export * from '../src/Eager';
 // Get a cleaner output in phantom js for CI builds
 import { Logger } from '../src/misc/Logger';
 import { Simulate } from './Simulate';
-if (Simulate.isPhantomJs()) {
+if (Simulate.isChromeHeadless()) {
   Logger.disable();
 }
 
@@ -24,7 +25,7 @@ DomTests();
 import { HighlightUtilsTest } from './utils/HighlightUtilsTest';
 HighlightUtilsTest();
 
-import { L10NTest } from './utils/L10NTest';
+import { L10NTest } from './misc/L10NTest';
 L10NTest();
 
 import { PromisesShimTest } from './misc/PromisesShimTest';
@@ -51,19 +52,19 @@ QueryControllerTest();
 import { AdvancedSearchTest } from './ui/AdvancedSearch/AdvancedSearchTest';
 AdvancedSearchTest();
 
-import { TextInputTest } from './ui/AdvancedSearch/Form/TextInputTest';
+import { TextInputTest } from './ui/TextInputTest';
 TextInputTest();
 
-import { NumericSpinnerTest } from './ui/AdvancedSearch/Form/NumericSpinnerTest';
+import { NumericSpinnerTest } from './ui/NumericSpinnerTest';
 NumericSpinnerTest();
 
-import { DropdownTest } from './ui/AdvancedSearch/Form/DropdownTest';
+import { DropdownTest } from './ui/DropdownTest';
 DropdownTest();
 
-import { DatePickerTest } from './ui/AdvancedSearch/Form/DatePickerTest';
+import { DatePickerTest } from './ui/DatePickerTest';
 DatePickerTest();
 
-import { RadioButtonTest } from './ui/AdvancedSearch/Form/RadioButtonTest';
+import { RadioButtonTest } from './ui/RadioButtonTest';
 RadioButtonTest();
 
 import { KeywordsInputTest } from './ui/AdvancedSearch/KeywordsInput/KeywordsInputTest';
@@ -77,9 +78,6 @@ ExactKeywordsInputTest();
 
 import { NoneKeywordsInputTest } from './ui/AdvancedSearch/KeywordsInput/NoneKeywordsInputTest';
 NoneKeywordsInputTest();
-
-import { DateInputTest } from './ui/AdvancedSearch/DateInput/DateInputTest';
-DateInputTest();
 
 import { BetweenDateInputTest } from './ui/AdvancedSearch/DateInput/BetweenDateInputTest';
 BetweenDateInputTest();
@@ -141,6 +139,9 @@ ComponentTest();
 import { DidYouMeanTest } from './ui/DidYouMeanTest';
 DidYouMeanTest();
 
+import { DistanceResourcesTest } from './ui/DistanceResourcesTest';
+DistanceResourcesTest();
+
 import { ErrorReportTest } from './ui/ErrorReportTest';
 ErrorReportTest();
 
@@ -170,6 +171,9 @@ FacetSliderTest();
 
 import { FacetTest } from './ui/FacetTest';
 FacetTest();
+
+import { BreadcrumbValueListTest } from './ui/BreadcrumbValuesListTest';
+BreadcrumbValueListTest();
 
 import { FieldSuggestionsTest } from './ui/FieldSuggestionsTest';
 FieldSuggestionsTest();
@@ -209,6 +213,9 @@ MatrixTest();
 
 import { OmniboxTest } from './ui/OmniboxTest';
 OmniboxTest();
+
+import { OmniboxResultListTest } from './ui/OmniboxResultListTest';
+OmniboxResultListTest();
 
 import { PagerTest } from './ui/PagerTest';
 PagerTest();
@@ -252,8 +259,14 @@ ResultFoldingTest();
 import { ResultLinkTest } from './ui/ResultLinkTest';
 ResultLinkTest();
 
+import { PrintableUriTest } from './ui/PrintableUriTest';
+PrintableUriTest();
+
 import { ResultListTest } from './ui/ResultListTest';
 ResultListTest();
+
+import { ResultListTableRendererTest } from './ui/ResultListTableRendererTest';
+ResultListTableRendererTest();
 
 import { ResultRatingTest } from './ui/ResultRatingTest';
 ResultRatingTest();
@@ -290,6 +303,9 @@ SortTest();
 
 import { TabTest } from './ui/TabTest';
 TabTest();
+
+import { TableTemplateTest } from './ui/TableTemplateTest';
+TableTemplateTest();
 
 import { TemplateLoaderTest } from './ui/TemplateLoaderTest';
 TemplateLoaderTest();
@@ -375,26 +391,17 @@ StringUtilsTests();
 import { CoreHelperTest } from './ui/CoreHelpersTest';
 CoreHelperTest();
 
+import { TemplateConditionEvaluatorTest } from './ui/TemplateConditionEvaluatorTest';
+TemplateConditionEvaluatorTest();
+
 import { PipelineContextText } from './ui/PipelineContextTest';
 PipelineContextText();
 
 import { QuerySuggestAddonTest } from './ui/QuerySuggestAddonTest';
 QuerySuggestAddonTest();
 
-import { ResponsiveComponentsTest } from './ui/ResponsiveComponentsTest';
-ResponsiveComponentsTest();
-
-import { TemplateTest } from './ui/TemplateTest';
-TemplateTest();
-
-import { TemplateListTest } from './ui/TemplateListTest';
-TemplateListTest();
-
-import { TemplateCacheTest } from './ui/TemplateCacheTest';
-TemplateCacheTest();
-
-import { DefaultInstantiateTemplateOptionsTest } from './ui/DefaultInstantiateTemplateOptionsTest';
-DefaultInstantiateTemplateOptionsTest();
+import { TemplateFieldsEvaluatorTest } from './ui/TemplateFieldsEvaluatorTest';
+TemplateFieldsEvaluatorTest();
 
 import { DefaultRecommendationTemplateTest } from './ui/DefaultRecommendationTemplateTest';
 DefaultRecommendationTemplateTest();
@@ -402,20 +409,29 @@ DefaultRecommendationTemplateTest();
 import { DefaultResultTemplateTest } from './ui/DefaultResultTemplateTest';
 DefaultResultTemplateTest();
 
+import { TemplateCacheTest } from './ui/TemplateCacheTest';
+TemplateCacheTest();
+
+import { TemplateTest } from './ui/TemplateTest';
+TemplateTest();
+
+import { DefaultInstantiateTemplateOptionsTest } from './ui/DefaultInstantiateTemplateOptionsTest';
+DefaultInstantiateTemplateOptionsTest();
+
 import { HtmlTemplateTest } from './ui/HtmlTemplateTest';
 HtmlTemplateTest();
-
-import { TemplateConditionEvaluatorTest } from './ui/TemplateConditionEvaluatorTest';
-TemplateConditionEvaluatorTest();
-
-import { TemplateFieldsEvaluatorTest } from './ui/TemplateFieldsEvaluatorTest';
-TemplateFieldsEvaluatorTest();
 
 import { TemplateFromAScriptTagTest } from './ui/TemplateFromAScriptTagTest';
 TemplateFromAScriptTagTest();
 
+import { TemplateListTest } from './ui/TemplateListTest';
+TemplateListTest();
+
 import { UnderscoreTemplateTest } from './ui/UnderscoreTemplateTest';
 UnderscoreTemplateTest();
+
+import { ResponsiveComponentsTest } from './ui/ResponsiveComponentsTest';
+ResponsiveComponentsTest();
 
 import { ResponsiveComponentsManagerTest } from './ui/ResponsiveComponents/ResponsiveComponentsManagerTest';
 ResponsiveComponentsManagerTest();
@@ -440,3 +456,39 @@ ValueElementTest();
 
 import { PublicPathUtilsTest } from './utils/PublicPathUtilsTest';
 PublicPathUtilsTest();
+
+import { DomUtilsTest } from './utils/DomUtilsTest';
+DomUtilsTest();
+
+import { UtilsTest } from './utils/UtilsTest';
+UtilsTest();
+
+import { CheckboxTest } from './ui/CheckboxTest';
+CheckboxTest();
+
+import { FormGroupTest } from './ui/FormGroupTest';
+FormGroupTest();
+
+import { MultiSelectTest } from './ui/MultiSelectTest';
+MultiSelectTest();
+
+import { FacetSliderQueryControllerTest } from './controllers/FacetSliderQueryControllerTest';
+FacetSliderQueryControllerTest();
+
+import { DateUtilsTest } from './ui/DateUtilsTest';
+DateUtilsTest();
+
+import { DebugForResultTest } from './ui/DebugForResultTest';
+DebugForResultTest();
+
+import { DebugHeaderTest } from './ui/DebugHeaderTest';
+DebugHeaderTest();
+
+import { FacetValuesTest } from './ui/FacetValuesTest';
+FacetValuesTest();
+
+import { SimpleFilterTest } from './ui/SimpleFilterTest';
+SimpleFilterTest();
+
+import { DeviceUtilsTest } from './utils/DeviceUtilsTest';
+DeviceUtilsTest();

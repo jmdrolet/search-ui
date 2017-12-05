@@ -11,14 +11,13 @@ import { exportGlobally } from '../../GlobalExports';
 
 import 'styling/_QueryDuration';
 
-export interface IQueryDurationOptions {
-}
+export interface IQueryDurationOptions {}
 
 /**
  * The QueryDuration component displays the duration of the last query execution.
  *
  * When a {@link QueryEvents.querySuccess} event is triggered, the QueryDuration component becomes visible. It also
- * displays the global duration, the index duration, the proxy duration, and the client duration in a single tooltip.
+ * displays the global duration, the index duration, and the client duration in a single tooltip.
  *
  * If a {@link QueryEvents.queryError} event is triggered, the QueryDuration component becomes hidden.
  */
@@ -27,12 +26,11 @@ export class QueryDuration extends Component {
 
   static doExport = () => {
     exportGlobally({
-      'QueryDuration': QueryDuration
+      QueryDuration: QueryDuration
     });
-  }
-
-  static options: IQueryDurationOptions = {
   };
+
+  static options: IQueryDurationOptions = {};
 
   private textContainer: HTMLElement;
 
@@ -61,13 +59,12 @@ export class QueryDuration extends Component {
       Assert.exists(data);
 
       let tooltip = [
-        l('Duration', this.formatQueryDuration(data.results.clientDuration)),
-        l('IndexDuration', this.formatQueryDuration(data.results.duration)),
-        l('ProxyDuration', this.formatQueryDuration(data.results.proxyDuration)),
-        l('ClientDuration', this.formatQueryDuration(data.results.clientDuration))
+        l('Duration', this.formatQueryDuration(data.results.duration)),
+        l('SearchAPIDuration', this.formatQueryDuration(data.results.searchAPIDuration)),
+        l('IndexDuration', this.formatQueryDuration(data.results.indexDuration))
       ].join('\n');
 
-      this.textContainer.textContent = this.formatQueryDuration(data.results.clientDuration);
+      this.textContainer.textContent = this.formatQueryDuration(data.results.duration);
       this.element.setAttribute('title', tooltip);
       this.element.style.display = 'inline';
     } else {

@@ -1,3 +1,4 @@
+/// <reference path="../../lib/jasmine/index.d.ts" />
 import * as Mock from '../MockEnvironment';
 import { Facet, IFacetOptions } from '../../src/ui/Facet/Facet';
 import { $$ } from '../../src/utils/Dom';
@@ -17,9 +18,6 @@ export function FacetTest() {
       test = Mock.optionsComponentSetup<Facet, IFacetOptions>(Facet, <IFacetOptions>{
         field: '@field'
       });
-      test.cmp.searchInterface.isNewDesign = () => {
-        return true;
-      };
     });
 
     afterEach(() => {
@@ -170,6 +168,63 @@ export function FacetTest() {
       expect(test.cmp.getValueCaption(FacetValue.createFromValue('txt'))).toBe('Text');
     });
 
+    describe('with a live query state model', () => {
+      beforeEach(() => {
+        test = Mock.advancedComponentSetup<Facet>(Facet, <Mock.AdvancedComponentSetupOptions>{
+          modifyBuilder: builder => {
+            return builder.withLiveQueryStateModel();
+          },
+          cmpOptions: {
+            field: '@field'
+          }
+        });
+        test.env.queryStateModel.registerNewAttribute('f:@field', []);
+        test.env.queryStateModel.registerNewAttribute('f:@field:not', []);
+        test.env.queryStateModel.registerNewAttribute('f:@field:operator', 'or');
+      });
+
+      it('should select the needed values', () => {
+        test.env.queryStateModel.set('f:@field', ['a', 'b', 'c']);
+        expect(test.cmp.getSelectedValues()).toEqual(['a', 'b', 'c']);
+      });
+
+      it('should exclude the needed values', () => {
+        test.env.queryStateModel.set('f:@field:not', ['a', 'b', 'c']);
+        expect(test.cmp.getExcludedValues()).toEqual(['a', 'b', 'c']);
+      });
+
+      it('should update the operator', () => {
+        test.env.queryStateModel.set('f:@field:operator', 'and');
+        expect(test.cmp.options.useAnd).toBeTruthy();
+        test.env.queryStateModel.set('f:@field:operator', 'or');
+        expect(test.cmp.options.useAnd).toBeFalsy();
+      });
+
+      it('should trim values from the query state model for selected values', () => {
+        test.env.queryStateModel.set('f:@field', ['a     ', '     b', '    c    ']);
+        expect(test.cmp.getSelectedValues()).toEqual(['a', 'b', 'c']);
+      });
+
+      it('should trim values from the query state model for excluded values', () => {
+        test.env.queryStateModel.set('f:@field:not', ['a     ', '     b', '    c    ']);
+        expect(test.cmp.getExcludedValues()).toEqual(['a', 'b', 'c']);
+      });
+    });
+
+    describe('on a query error', () => {
+      it('should hide the waiting animation', () => {
+        spyOn(test.cmp, 'hideWaitingAnimation');
+        Simulate.queryError(test.env);
+        expect(test.cmp.hideWaitingAnimation).toHaveBeenCalledTimes(1);
+      });
+
+      it('should update the appearance based on the new empty values', () => {
+        Simulate.queryError(test.env);
+        expect($$(test.cmp.element).hasClass('coveo-facet-empty')).toBeTruthy();
+        expect(test.cmp.getDisplayedFacetValues().length).toBe(0);
+      });
+    });
+
     describe('exposes options', () => {
       it('title should set the title', () => {
         test = Mock.optionsComponentSetup<Facet, IFacetOptions>(Facet, {
@@ -185,11 +240,13 @@ export function FacetTest() {
           field: '@myfield'
         });
         var simulation = Simulate.query(test.env);
-        expect(simulation.queryBuilder.groupByRequests).toEqual(jasmine.arrayContaining([
-          jasmine.objectContaining({
-            field: '@myfield'
-          })
-        ]));
+        expect(simulation.queryBuilder.groupByRequests).toEqual(
+          jasmine.arrayContaining([
+            jasmine.objectContaining({
+              field: '@myfield'
+            })
+          ])
+        );
       });
 
       it('headerIcon should allow to set an icon in the header', () => {
@@ -252,9 +309,13 @@ export function FacetTest() {
         });
 
         var simulation = Simulate.query(test.env);
-        expect(simulation.queryBuilder.build().groupBy).toEqual(jasmine.arrayContaining([jasmine.objectContaining({
-          maximumNumberOfValues: 13 + 1 // one more for the more less function
-        })]));
+        expect(simulation.queryBuilder.build().groupBy).toEqual(
+          jasmine.arrayContaining([
+            jasmine.objectContaining({
+              maximumNumberOfValues: 13 + 1 // one more for the more less function
+            })
+          ])
+        );
       });
 
       it('pageSize should specify the number of values for the more option', () => {
@@ -263,11 +324,15 @@ export function FacetTest() {
           pageSize: 13
         });
         test.cmp.showMore();
-        expect(test.cmp.getEndpoint().search).toHaveBeenCalledWith(jasmine.objectContaining({
-          groupBy: jasmine.arrayContaining([jasmine.objectContaining({
-            maximumNumberOfValues: 13 + test.cmp.options.numberOfValues + 1 // 13 + already displayed at start + 1 more for next more
-          })])
-        }));
+        expect(test.cmp.getEndpoint().search).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            groupBy: jasmine.arrayContaining([
+              jasmine.objectContaining({
+                maximumNumberOfValues: 13 + test.cmp.options.numberOfValues + 1 // 13 + already displayed at start + 1 more for next more
+              })
+            ])
+          })
+        );
       });
 
       it('lookupField should specify the lookupfield to use in the query', () => {
@@ -277,9 +342,13 @@ export function FacetTest() {
         });
 
         var simulation = Simulate.query(test.env);
-        expect(simulation.queryBuilder.build().groupBy).toEqual(jasmine.arrayContaining([jasmine.objectContaining({
-          lookupField: '@lookupfield'
-        })]));
+        expect(simulation.queryBuilder.build().groupBy).toEqual(
+          jasmine.arrayContaining([
+            jasmine.objectContaining({
+              lookupField: '@lookupfield'
+            })
+          ])
+        );
       });
 
       it('enableSettings should specify if the setting component is initialized', () => {
@@ -350,9 +419,13 @@ export function FacetTest() {
         });
 
         var simulation = Simulate.query(test.env);
-        expect(simulation.queryBuilder.build().groupBy).toEqual(jasmine.arrayContaining([jasmine.objectContaining({
-          sortCriteria: 'score'
-        })]));
+        expect(simulation.queryBuilder.build().groupBy).toEqual(
+          jasmine.arrayContaining([
+            jasmine.objectContaining({
+              sortCriteria: 'score'
+            })
+          ])
+        );
       });
 
       it('customSort should specify the sort of values when rendered', () => {
@@ -390,10 +463,9 @@ export function FacetTest() {
         // expect to be custom sort + selection + exclude + 1 for "more values"
         // and foo1 is not duplicated since it's already in the custom value
         expect(simulation.queryBuilder.build().groupBy[0].maximumNumberOfValues).toBe(11);
-
       });
 
-      it('custom sort should not request more values then the default if it\'s not needed', () => {
+      it("custom sort should not request more values then the default if it's not needed", () => {
         test = Mock.optionsComponentSetup<Facet, IFacetOptions>(Facet, {
           field: '@field',
           customSort: ['foo1', 'foo2']
@@ -411,26 +483,13 @@ export function FacetTest() {
         });
 
         var simulation = Simulate.query(test.env);
-        expect(simulation.queryBuilder.build().groupBy).toEqual(jasmine.arrayContaining([jasmine.objectContaining({
-          injectionDepth: 9999
-        })]));
-      });
-
-      it('showIcon should specify if the icon is displayed near each values', () => {
-        test = Mock.optionsComponentSetup<Facet, IFacetOptions>(Facet, {
-          field: '@field',
-          showIcon: true
-        });
-        test.env.searchInterface.isNewDesign = () => false; // necessary since showIcon is a legacy option
-        test.cmp.ensureDom();
-        expect(test.cmp.facetValuesList.get('foo').renderer.icon).toBeDefined();
-
-        test = Mock.optionsComponentSetup<Facet, IFacetOptions>(Facet, {
-          field: '@field',
-          showIcon: false
-        });
-        test.cmp.ensureDom();
-        expect(test.cmp.facetValuesList.get('foo').renderer.icon).toBeUndefined();
+        expect(simulation.queryBuilder.build().groupBy).toEqual(
+          jasmine.arrayContaining([
+            jasmine.objectContaining({
+              injectionDepth: 9999
+            })
+          ])
+        );
       });
 
       it('useAnd should specify the filter generated by a facet', () => {
@@ -485,12 +544,11 @@ export function FacetTest() {
         expect(test.cmp.facetSearch).toBeUndefined();
       });
 
-      it('facetSearchDelay should be passed to the facet search component', function (done) {
+      it('facetSearchDelay should be passed to the facet search component', function(done) {
         test = Mock.optionsComponentSetup<Facet, IFacetOptions>(Facet, {
           field: '@field',
           facetSearchDelay: 5
         });
-        test.cmp.searchInterface.isNewDesign = () => true;
         test.cmp.ensureDom();
         test.cmp.facetSearch.focus();
         setTimeout(() => {
@@ -499,20 +557,23 @@ export function FacetTest() {
         }, 6); // one more ms then facetSearchDelay
       });
 
-      it('numberOfValuesInFacetSearch should be passed to the facet search component', function (done) {
+      it('numberOfValuesInFacetSearch should be passed to the facet search component', function(done) {
         test = Mock.optionsComponentSetup<Facet, IFacetOptions>(Facet, {
           field: '@field',
           numberOfValuesInFacetSearch: 13
         });
-        test.cmp.searchInterface.isNewDesign = () => true;
         test.cmp.ensureDom();
         test.cmp.facetSearch.focus();
         setTimeout(() => {
-          expect(test.cmp.getEndpoint().search).toHaveBeenCalledWith(jasmine.objectContaining({
-            groupBy: jasmine.arrayContaining([jasmine.objectContaining({
-              maximumNumberOfValues: 13
-            })])
-          }));
+          expect(test.cmp.getEndpoint().search).toHaveBeenCalledWith(
+            jasmine.objectContaining({
+              groupBy: jasmine.arrayContaining([
+                jasmine.objectContaining({
+                  maximumNumberOfValues: 13
+                })
+              ])
+            })
+          );
           done();
         }, test.cmp.options.facetSearchDelay + 10);
       });
@@ -570,11 +631,17 @@ export function FacetTest() {
         });
 
         var simulation = Simulate.query(test.env);
-        expect(simulation.queryBuilder.build().groupBy).toEqual(jasmine.arrayContaining([jasmine.objectContaining({
-          computedFields: jasmine.arrayContaining([jasmine.objectContaining({
-            field: '@computedField'
-          })])
-        })]));
+        expect(simulation.queryBuilder.build().groupBy).toEqual(
+          jasmine.arrayContaining([
+            jasmine.objectContaining({
+              computedFields: jasmine.arrayContaining([
+                jasmine.objectContaining({
+                  field: '@computedField'
+                })
+              ])
+            })
+          ])
+        );
       });
 
       it('computedFieldOperation should specify the computed field to use in the query', () => {
@@ -585,11 +652,17 @@ export function FacetTest() {
         });
 
         var simulation = Simulate.query(test.env);
-        expect(simulation.queryBuilder.build().groupBy).toEqual(jasmine.arrayContaining([jasmine.objectContaining({
-          computedFields: jasmine.arrayContaining([jasmine.objectContaining({
-            operation: 'qwerty'
-          })])
-        })]));
+        expect(simulation.queryBuilder.build().groupBy).toEqual(
+          jasmine.arrayContaining([
+            jasmine.objectContaining({
+              computedFields: jasmine.arrayContaining([
+                jasmine.objectContaining({
+                  operation: 'qwerty'
+                })
+              ])
+            })
+          ])
+        );
       });
 
       it('enableMoreLess should specify that the moreLess element should be rendered', () => {
@@ -608,7 +681,6 @@ export function FacetTest() {
         expect(more).toBeDefined();
         expect(less).toBeDefined();
 
-
         test = Mock.optionsComponentSetup<Facet, IFacetOptions>(Facet, {
           field: '@field',
           enableMoreLess: false
@@ -626,9 +698,13 @@ export function FacetTest() {
         });
 
         var simulation = Simulate.query(test.env);
-        expect(simulation.queryBuilder.build().groupBy).toEqual(jasmine.arrayContaining([jasmine.objectContaining({
-          allowedValues: jasmine.arrayContaining(['a', 'b', 'c'])
-        })]));
+        expect(simulation.queryBuilder.build().groupBy).toEqual(
+          jasmine.arrayContaining([
+            jasmine.objectContaining({
+              allowedValues: jasmine.arrayContaining(['a', 'b', 'c'])
+            })
+          ])
+        );
       });
 
       it('additionalFilter should specify a query override in the group by request', () => {
@@ -638,9 +714,13 @@ export function FacetTest() {
         });
 
         var simulation = Simulate.query(test.env);
-        expect(simulation.queryBuilder.build().groupBy).toEqual(jasmine.arrayContaining([jasmine.objectContaining({
-          constantQueryOverride: '@qwerty==foobar'
-        })]));
+        expect(simulation.queryBuilder.build().groupBy).toEqual(
+          jasmine.arrayContaining([
+            jasmine.objectContaining({
+              constantQueryOverride: '@qwerty==foobar'
+            })
+          ])
+        );
       });
 
       it('dependsOn should specify a facet to depend on another one', () => {
@@ -649,14 +729,24 @@ export function FacetTest() {
           dependsOn: '@masterFacet'
         });
 
-        var masterFacet = Mock.advancedComponentSetup<Facet>(Facet, new Mock.AdvancedComponentSetupOptions(undefined, {
-          field: '@masterFacet'
-        }, (builder: Mock.MockEnvironmentBuilder) => {
-          return builder.withRoot(test.env.root);
-        }));
+        var masterFacet = Mock.advancedComponentSetup<Facet>(
+          Facet,
+          new Mock.AdvancedComponentSetupOptions(
+            undefined,
+            {
+              field: '@masterFacet'
+            },
+            (builder: Mock.MockEnvironmentBuilder) => {
+              return builder.withRoot(test.env.root);
+            }
+          )
+        );
 
         var results = FakeResults.createFakeResults();
-        results.groupByResults = [FakeResults.createFakeGroupByResult('@field', 'foo', 15), FakeResults.createFakeGroupByResult('@masterFacet', 'foo', 15)];
+        results.groupByResults = [
+          FakeResults.createFakeGroupByResult('@field', 'foo', 15),
+          FakeResults.createFakeGroupByResult('@masterFacet', 'foo', 15)
+        ];
 
         Simulate.query(test.env, {
           results: results
@@ -664,6 +754,34 @@ export function FacetTest() {
 
         expect($$(test.cmp.element).hasClass('coveo-facet-dependent')).toBe(true);
         expect($$(masterFacet.cmp.element).hasClass('coveo-facet-dependent')).toBe(false);
+      });
+
+      it('padding container should default to coveo-facet-column', () => {
+        const facetColumn = $$('div', { className: 'coveo-facet-column' });
+        const dummyDivParent = $$('div');
+        test = Mock.advancedComponentSetup<Facet>(
+          Facet,
+          new Mock.AdvancedComponentSetupOptions(undefined, {}, (builder: Mock.MockEnvironmentBuilder) => {
+            facetColumn.append(builder.element);
+            dummyDivParent.append(builder.element);
+            facetColumn.append(dummyDivParent.el);
+            return builder;
+          })
+        );
+
+        expect(test.cmp.options.paddingContainer).toBe(facetColumn.el);
+      });
+
+      it('padding container should default to the parent container if there is no coveo-facet-column', () => {
+        const dummyDivParent = $$('div');
+        test = Mock.advancedComponentSetup<Facet>(
+          Facet,
+          new Mock.AdvancedComponentSetupOptions(undefined, {}, (builder: Mock.MockEnvironmentBuilder) => {
+            dummyDivParent.append(builder.element);
+            return builder;
+          })
+        );
+        expect(test.cmp.options.paddingContainer).toBe(dummyDivParent.el);
       });
     });
   });

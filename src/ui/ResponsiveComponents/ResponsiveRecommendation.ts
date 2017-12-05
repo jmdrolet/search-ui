@@ -15,19 +15,17 @@ import { QueryEvents, IQuerySuccessEventArgs, INoResultsEventArgs } from '../../
 import * as _ from 'underscore';
 
 import 'styling/_ResponsiveRecommendation';
+import { Defer } from '../../MiscModules';
 
 export class ResponsiveRecommendation implements IResponsiveComponent {
-
   public static DROPDOWN_CONTAINER_CSS_CLASS_NAME: string = 'coveo-recommendation-dropdown-container';
   public static RESPONSIVE_BREAKPOINT = 1000;
 
   public recommendationRoot: Dom;
   private breakpoint: number;
   private dropdown: ResponsiveDropdown;
-  private logger: Logger;
   private facetSliders: any[];
   private facets: any[];
-  private dropdownContainer: Dom;
   private dropdownHeaderLabel: string;
 
   public static init(root: HTMLElement, component, options: IResponsiveComponentOptions) {
@@ -42,7 +40,13 @@ export class ResponsiveRecommendation implements IResponsiveComponent {
       return;
     }
 
-    ResponsiveComponentsManager.register(ResponsiveRecommendation, $$(coveoRoot), Recommendation.ID, component, options);
+    ResponsiveComponentsManager.register(
+      ResponsiveRecommendation,
+      $$(coveoRoot),
+      Recommendation.ID,
+      component,
+      _.extend({}, options, { initializationEventRoot: $$(root) })
+    );
   }
 
   private static findParentRootOfRecommendationComponent(root: HTMLElement): Dom {
@@ -53,18 +57,22 @@ export class ResponsiveRecommendation implements IResponsiveComponent {
     return null;
   }
 
-  constructor(public coveoRoot: Dom, public ID: string, options: IResponsiveComponentOptions, public responsiveDropdown?: ResponsiveDropdown) {
+  constructor(
+    public coveoRoot: Dom,
+    public ID: string,
+    options: IResponsiveComponentOptions,
+    public responsiveDropdown?: ResponsiveDropdown
+  ) {
     this.recommendationRoot = this.getRecommendationRoot();
     this.dropdownHeaderLabel = options.dropdownHeaderLabel;
     this.breakpoint = this.defineResponsiveBreakpoint(options);
-    this.logger = new Logger(this);
     this.dropdown = this.buildDropdown(responsiveDropdown);
     this.facets = this.getFacets();
     this.facetSliders = this.getFacetSliders();
     this.registerOnOpenHandler();
     this.registerOnCloseHandler();
     this.registerQueryEvents();
-    this.dropdownContainer = $$('div', { className: ResponsiveRecommendation.DROPDOWN_CONTAINER_CSS_CLASS_NAME });
+    this.handleResizeEvent();
   }
 
   public handleResizeEvent(): void {
@@ -89,10 +97,17 @@ export class ResponsiveRecommendation implements IResponsiveComponent {
 
   private changeToSmallMode() {
     this.dropdown.close();
-    $$(this.coveoRoot.find(`.${ResponsiveComponentsManager.DROPDOWN_HEADER_WRAPPER_CSS_CLASS}`)).el.appendChild(this.dropdown.dropdownHeader.element.el);
-    this.disableFacetPreservePosition();
-    ResponsiveComponentsUtils.activateSmallRecommendation(this.coveoRoot);
-    ResponsiveComponentsUtils.activateSmallRecommendation(this.recommendationRoot);
+    const header = this.coveoRoot.find(`.${ResponsiveComponentsManager.DROPDOWN_HEADER_WRAPPER_CSS_CLASS}`);
+    if (!header) {
+      // It's possible that recommendation gets initialized before the main interface is completed.
+      // We defer the resize event execution in that case.
+      Defer.defer(() => this.handleResizeEvent());
+    } else {
+      $$(header).append(this.dropdown.dropdownHeader.element.el);
+      this.disableFacetPreservePosition();
+      ResponsiveComponentsUtils.activateSmallRecommendation(this.coveoRoot);
+      ResponsiveComponentsUtils.activateSmallRecommendation(this.recommendationRoot);
+    }
   }
 
   private changeToLargeMode() {
@@ -169,11 +184,11 @@ export class ResponsiveRecommendation implements IResponsiveComponent {
   }
 
   private enableFacetPreservePosition(): void {
-    _.each(this.facets, facet => facet.options.preservePosition = true);
+    _.each(this.facets, facet => (facet.options.preservePosition = true));
   }
 
   private disableFacetPreservePosition(): void {
-    _.each(this.facets, facet => facet.options.preservePosition = false);
+    _.each(this.facets, facet => (facet.options.preservePosition = false));
   }
 
   private drawFacetSliderGraphs(): void {

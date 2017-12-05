@@ -67,6 +67,9 @@ chatterTopicRegisterFields();
 import { DidYouMean } from './ui/DidYouMean/DidYouMean';
 DidYouMean.doExport();
 
+import { DistanceResources } from './ui/Distance/DistanceResources';
+DistanceResources.doExport();
+
 import { ErrorReport } from './ui/ErrorReport/ErrorReport';
 ErrorReport.doExport();
 
@@ -232,6 +235,33 @@ import { registerFields as youtubeThumbnailRegisterFields } from './ui/YouTube/Y
 youtubeThumbnailRegisterFields();
 
 export { Template } from './ui/Templates/Template';
+
+import { Checkbox } from './ui/FormWidgets/Checkbox';
+Checkbox.doExport();
+
+import { DatePicker } from './ui/FormWidgets/DatePicker';
+DatePicker.doExport();
+
+import { Dropdown } from './ui/FormWidgets/Dropdown';
+Dropdown.doExport();
+
+import { FormGroup } from './ui/FormWidgets/FormGroup';
+FormGroup.doExport();
+
+import { MultiSelect } from './ui/FormWidgets/MultiSelect';
+MultiSelect.doExport();
+
+import { NumericSpinner } from './ui/FormWidgets/NumericSpinner';
+NumericSpinner.doExport();
+
+import { RadioButton } from './ui/FormWidgets/RadioButton';
+RadioButton.doExport();
+
+import { TextInput } from './ui/FormWidgets/TextInput';
+TextInput.doExport();
+
+import { SimpleFilter } from './ui/SimpleFilter/SimpleFilter';
+SimpleFilter.doExport();
 
 import { swapVar } from './SwapVar';
 swapVar(this);

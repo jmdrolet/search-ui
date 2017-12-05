@@ -1,12 +1,10 @@
-import { Dropdown } from '../Form/Dropdown';
-import { NumericSpinner } from '../Form/NumericSpinner';
+import { Dropdown } from '../../FormWidgets/Dropdown';
+import { NumericSpinner } from '../../FormWidgets/NumericSpinner';
 import { $$ } from '../../../utils/Dom';
 import { DocumentInput } from './DocumentInput';
 import { QueryBuilder } from '../../Base/QueryBuilder';
 
-
 export class SizeInput extends DocumentInput {
-
   public static modes = ['AtLeast', 'AtMost'];
   public static sizes = ['KB', 'MB', 'Bytes'];
 
@@ -15,8 +13,8 @@ export class SizeInput extends DocumentInput {
   public sizeInput: NumericSpinner;
   public sizeSelect: Dropdown;
 
-  constructor() {
-    super('Size');
+  constructor(public root: HTMLElement) {
+    super('Size', root);
   }
 
   public reset() {
@@ -68,5 +66,4 @@ export class SizeInput extends DocumentInput {
         return size;
     }
   }
-
 }

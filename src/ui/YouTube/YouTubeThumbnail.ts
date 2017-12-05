@@ -10,6 +10,9 @@ import { ModalBox as ModalBoxModule } from '../../ExternalModulesShim';
 import * as _ from 'underscore';
 import { exportGlobally } from '../../GlobalExports';
 import { get } from '../Base/RegisteredNamedMethods';
+import { SVGIcons } from '../../utils/SVGIcons';
+import { SVGDom } from '../../utils/SVGDom';
+import { Utils } from '../../UtilsModules';
 
 export interface IYouTubeThumbnailOptions {
   width: string;
@@ -34,15 +37,14 @@ export class YouTubeThumbnail extends Component {
 
   static doExport = () => {
     exportGlobally({
-      'YouTubeThumbnail': YouTubeThumbnail
+      YouTubeThumbnail: YouTubeThumbnail
     });
-  }
+  };
 
   /**
    * @componentOptions
    */
   static options: IYouTubeThumbnailOptions = {
-
     /**
      * Specifies the width (in pixels) of the YouTube thumbnail.
      *
@@ -72,7 +74,13 @@ export class YouTubeThumbnail extends Component {
 
   private modalbox: Coveo.ModalBox.ModalBox;
 
-  constructor(public element: HTMLElement, public options?: IYouTubeThumbnailOptions, public bindings?: IResultsComponentBindings, public result?: IQueryResult, public ModalBox = ModalBoxModule) {
+  constructor(
+    public element: HTMLElement,
+    public options?: IYouTubeThumbnailOptions,
+    public bindings?: IResultsComponentBindings,
+    public result?: IQueryResult,
+    public ModalBox = ModalBoxModule
+  ) {
     super(element, YouTubeThumbnail.ID, bindings);
     this.options = ComponentOptions.initComponentOptions(element, YouTubeThumbnail, options);
     this.resultLink = $$('a');
@@ -85,14 +93,21 @@ export class YouTubeThumbnail extends Component {
     let img = $$('img');
     img.el.style.width = this.options.width;
     img.el.style.height = this.options.height;
-    img.setAttribute('src', result.raw['ytthumbnailurl']);
+    img.setAttribute('src', Utils.getFieldValue(this.result, 'ytthumbnailurl'));
     img.addClass('coveo-youtube-thumbnail-img');
+    img.el.onerror = () => {
+      const svgVideo = $$('div', {}, SVGIcons.icons.video).el;
+      SVGDom.addStyleToSVGInContainer(svgVideo, {
+        width: this.options.width
+      });
+      $$(img).remove();
+      thumbnailDiv.append(svgVideo);
+    };
     thumbnailDiv.append(img.el);
 
     let span = $$('span');
     span.addClass('coveo-youtube-thumbnail-play-button');
     thumbnailDiv.append(span.el);
-
 
     $$(this.element).append(this.resultLink.el);
 
@@ -112,7 +127,6 @@ export class YouTubeThumbnail extends Component {
       result: result
     };
     Initialization.automaticallyCreateComponentsInside(element, initParameters);
-
   }
 
   /**
@@ -127,7 +141,8 @@ export class YouTubeThumbnail extends Component {
 
   private openYoutubeIframe() {
     // need to put iframe inside div : iframe with position absolute and left:0, right : 0 , bottom: 0 is not standard/supported
-    let iframe = $$('iframe'), div = $$('div');
+    let iframe = $$('iframe'),
+      div = $$('div');
     iframe.setAttribute('src', 'https://www.youtube.com/embed/' + this.extractVideoId() + '?autoplay=1');
     iframe.setAttribute('allowfullscreen', 'allowfullscreen');
     iframe.setAttribute('webkitallowfullscreen', 'webkitallowfullscreen');
@@ -139,9 +154,10 @@ export class YouTubeThumbnail extends Component {
     this.modalbox = this.ModalBox.open(div.el, {
       overlayClose: true,
       title: DomUtils.getQuickviewHeader(this.result, { showDate: true, title: this.result.title }, this.bindings).el.outerHTML,
-      className: 'coveo-quick-view coveo-youtube-player',
+      className: 'coveo-youtube-player',
       validation: () => true,
-      body: this.element.ownerDocument.body
+      body: this.element.ownerDocument.body,
+      sizeMod: 'big'
     });
 
     $$($$(this.modalbox.wrapper).find('.coveo-quickview-close-button')).on('click', () => {

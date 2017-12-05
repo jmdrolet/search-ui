@@ -4,6 +4,7 @@ import { ComponentOptions } from '../Base/ComponentOptions';
 import { IComponentBindings } from '../Base/ComponentBindings';
 import { MODEL_EVENTS, IAttributeChangedEventArg } from '../../models/Model';
 import { QueryEvents, IBuildingQueryEventArgs } from '../../events/QueryEvents';
+import { InitializationEvents } from '../../events/InitializationEvents';
 import { QueryStateModel, QUERY_STATE_ATTRIBUTES } from '../../models/QueryStateModel';
 import { analyticsActionCauseList, IAnalyticsInterfaceChange } from '../Analytics/AnalyticsActionListMeta';
 import { SearchEndpoint } from '../../rest/SearchEndpoint';
@@ -72,36 +73,35 @@ export class Tab extends Component {
 
   static doExport = () => {
     exportGlobally({
-      'Tab': Tab
+      Tab: Tab
     });
-  }
+  };
 
   /**
    * The options for a Tab
    * @componentOptions
    */
   static options: ITabOptions = {
-
     /**
      * Specifies a unique ID for the Tab.
      *
      * Specifying a value for this option is necessary for this component to work.
      */
-    id: ComponentOptions.buildStringOption({ required: true }),
+    id: ComponentOptions.buildStringOption({ required: true, section: 'Common Options' }),
 
     /**
      * Specifies the caption of the Tab.
      *
      * Specifying a value for this option is necessary for this component to work.
      */
-    caption: ComponentOptions.buildLocalizedStringOption({ required: true }),
+    caption: ComponentOptions.buildLocalizedStringOption({ required: true, section: 'Common Options' }),
 
     /**
      * Specifies an icon to use for the Tab.
      *
      * @deprecated This options is mostly kept for legacy reasons. If possible, you should avoid using it.
      */
-    icon: ComponentOptions.buildIconOption(),
+    icon: ComponentOptions.buildStringOption(),
 
     /**
      * Specifies an advanced expression or filter that the Tab should add to any outgoing query.
@@ -112,14 +112,14 @@ export class Tab extends Component {
      *
      * Default value is `undefined` and the Tab applies no additional expression or filter to the query.
      */
-    expression: ComponentOptions.buildStringOption(),
+    expression: ComponentOptions.buildStringOption({ section: 'Filtering' }),
 
     /**
      * Specifies the {@link SearchEndpoint} to point to when performing queries from within the Tab.
      *
      * By default, the Tab uses the "default" endpoint.
      */
-    endpoint: ComponentOptions.buildCustomOption((endpoint) => endpoint != null ? SearchEndpoint.endpoints[endpoint] : null),
+    endpoint: ComponentOptions.buildCustomOption(endpoint => (endpoint != null ? SearchEndpoint.endpoints[endpoint] : null)),
 
     /**
      * Specifies the default sort criteria to use when selecting the Tab. A {@link Sort} component with the same
@@ -156,7 +156,7 @@ export class Tab extends Component {
      *
      * Default value is `true`.
      */
-    constant: ComponentOptions.buildBooleanOption({ defaultValue: true }),
+    constant: ComponentOptions.buildBooleanOption({ defaultValue: true, section: 'Filtering' }),
 
     /**
      * Specifies whether to filter duplicates in the search results when the user selects the Tab.
@@ -166,8 +166,8 @@ export class Tab extends Component {
      *
      * **Example:**
      *
-     * > The end user narrows a query down to one document that has a duplicate. If this options is `true` and the user
-     * > selects the Tab, only one document appears in the search results while the Facet count is still 2.
+     * > The end user narrows a query down to one item that has a duplicate. If this options is `true` and the user
+     * > selects the Tab, only one item appears in the search results while the Facet count is still 2.
      *
      * **Note:**
      *
@@ -220,7 +220,7 @@ export class Tab extends Component {
      *
      * Default value is `true`.
      */
-    enableResponsiveMode: ComponentOptions.buildBooleanOption({ defaultValue: true }),
+    enableResponsiveMode: ComponentOptions.buildBooleanOption({ defaultValue: true, section: 'ResponsiveOptions' }),
 
     /**
      * Specifies the label of the button that allows to show the hidden tabs when in responsive mode.
@@ -230,11 +230,8 @@ export class Tab extends Component {
      *
      * The default value is `"More"`.
      */
-    dropdownHeaderLabel: ComponentOptions.buildLocalizedStringOption()
-
+    dropdownHeaderLabel: ComponentOptions.buildLocalizedStringOption({ section: 'ResponsiveOptions' })
   };
-
-  private isFirstQuery = true;
 
   /**
    * Creates a new Tab. Binds on buildingQuery event as well as an event on click of the element.
@@ -249,7 +246,10 @@ export class Tab extends Component {
     this.options = ComponentOptions.initComponentOptions(element, Tab, options);
 
     this.bind.onRootElement(QueryEvents.buildingQuery, (args: IBuildingQueryEventArgs) => this.handleBuildingQuery(args));
-    this.bind.onQueryState(MODEL_EVENTS.CHANGE_ONE, QUERY_STATE_ATTRIBUTES.T, (args: IAttributeChangedEventArg) => this.handleQueryStateChanged(args));
+    this.bind.onRootElement(InitializationEvents.afterInitialization, () => this.handleAfterInitialization());
+    this.bind.onQueryState(MODEL_EVENTS.CHANGE_ONE, QUERY_STATE_ATTRIBUTES.T, (args: IAttributeChangedEventArg) =>
+      this.handleQueryStateChanged(args)
+    );
     const clickAction = () => this.handleClick();
     this.bind.on(element, 'click', clickAction);
     this.bind.on(element, 'keyup', KeyboardUtils.keypressAction(KEYBOARD.ENTER, clickAction));
@@ -265,13 +265,15 @@ export class Tab extends Component {
    */
   public select() {
     if (!this.disabled) {
-      let currentLayout = this.queryStateModel.get(QUERY_STATE_ATTRIBUTES.LAYOUT);
+      const currentLayout = this.queryStateModel.get(QUERY_STATE_ATTRIBUTES.LAYOUT);
       this.queryStateModel.setMultiple({
         t: this.options.id,
         sort: this.options.sort || QueryStateModel.defaultAttributes.sort,
         layout: this.options.layout || currentLayout || QueryStateModel.defaultAttributes.layout
       });
-      this.usageAnalytics.logSearchEvent<IAnalyticsInterfaceChange>(analyticsActionCauseList.interfaceChange, { interfaceChangeTo: this.options.id });
+      this.usageAnalytics.logSearchEvent<IAnalyticsInterfaceChange>(analyticsActionCauseList.interfaceChange, {
+        interfaceChangeTo: this.options.id
+      });
       this.queryController.executeQuery();
     }
   }
@@ -285,13 +287,18 @@ export class Tab extends Component {
   public isElementIncludedInTab(element: HTMLElement): boolean {
     Assert.exists(element);
 
-    var includedTabs = this.splitListOfTabs(element.getAttribute('data-tab'));
-    var excludedTabs = this.splitListOfTabs(element.getAttribute('data-tab-not'));
-    Assert.check(!(includedTabs.length != 0 && excludedTabs.length != 0), 'You cannot both explicitly include and exclude an element from tabs.');
+    const includedTabs = this.splitListOfTabs(element.getAttribute('data-tab'));
+    const excludedTabs = this.splitListOfTabs(element.getAttribute('data-tab-not'));
+    Assert.check(
+      !(includedTabs.length != 0 && excludedTabs.length != 0),
+      'You cannot both explicitly include and exclude an element from tabs.'
+    );
 
-    return (includedTabs.length != 0 && _.indexOf(includedTabs, this.options.id) != -1) ||
+    return (
+      (includedTabs.length != 0 && _.indexOf(includedTabs, this.options.id) != -1) ||
       (excludedTabs.length != 0 && _.indexOf(excludedTabs, this.options.id) == -1) ||
-      (includedTabs.length == 0 && excludedTabs.length == 0);
+      (includedTabs.length == 0 && excludedTabs.length == 0)
+    );
   }
 
   private handleClick() {
@@ -299,16 +306,16 @@ export class Tab extends Component {
   }
 
   private render() {
-    var icon = this.options.icon;
+    const icon = this.options.icon;
     if (Utils.isNonEmptyString(icon)) {
-      var iconSpan = $$('span').el;
+      const iconSpan = $$('span').el;
       $$(iconSpan).addClass(['coveo-icon', icon]);
       this.element.insertBefore(iconSpan, this.element.firstChild);
     }
 
-    var caption = this.options.caption;
+    const caption = this.options.caption;
     if (Utils.isNonEmptyString(caption)) {
-      var captionP = document.createElement('p');
+      const captionP = document.createElement('p');
       $$(captionP).text(caption);
       this.element.appendChild(captionP);
     }
@@ -317,7 +324,6 @@ export class Tab extends Component {
 
   protected handleBuildingQuery(data: IBuildingQueryEventArgs) {
     Assert.exists(data);
-    this.isFirstQuery = false;
     if (!this.disabled && this.isSelected()) {
       data.queryBuilder.tab = this.options.id;
 
@@ -354,16 +360,22 @@ export class Tab extends Component {
     }
   }
 
+  private handleAfterInitialization() {
+    if (this.isSelected() && this.options.layout) {
+      this.queryStateModel.set(QUERY_STATE_ATTRIBUTES.LAYOUT, this.options.layout);
+    }
+  }
+
   protected isSelected(): boolean {
-    var activeTab = this.queryStateModel.get(QueryStateModel.attributesEnum.t);
+    const activeTab = this.queryStateModel.get(QueryStateModel.attributesEnum.t);
     return activeTab == this.options.id;
   }
 
   private showAndHideAppropriateElements() {
-    var showElements = [];
-    var hideElements = [];
+    const showElements = [];
+    const hideElements = [];
 
-    _.each($$(this.root).findAll('[data-tab],[data-tab-not]'), (element) => {
+    _.each($$(this.root).findAll('[data-tab],[data-tab-not]'), element => {
       if (this.isElementIncludedInTab(element)) {
         this.toggleAllComponentsUnder(element, true);
         showElements.push(element);
@@ -374,14 +386,14 @@ export class Tab extends Component {
     });
 
     $$(this.root).one(QueryEvents.querySuccess, () => {
-      _.each(showElements, (elem) => $$(elem).removeClass('coveo-tab-disabled'));
-      _.each(hideElements, (elem) => $$(elem).addClass('coveo-tab-disabled'));
+      _.each(showElements, elem => $$(elem).removeClass('coveo-tab-disabled'));
+      _.each(hideElements, elem => $$(elem).addClass('coveo-tab-disabled'));
     });
   }
 
   private splitListOfTabs(value: string): string[] {
     if (Utils.exists(value)) {
-      return _.map(value.split(','), (tab) => Utils.trim(tab));
+      return _.map(value.split(','), tab => Utils.trim(tab));
     } else {
       return [];
     }
@@ -390,8 +402,8 @@ export class Tab extends Component {
   private toggleAllComponentsUnder(element: HTMLElement, enable: boolean) {
     Assert.exists(element);
 
-    var togglePossibleComponent = (possibleComponent: HTMLElement) => {
-      var possibleCmp = Component.get(possibleComponent, undefined, true);
+    const togglePossibleComponent = (possibleComponent: HTMLElement) => {
+      const possibleCmp = Component.get(possibleComponent, undefined, true);
       if (possibleCmp) {
         if (enable) {
           possibleCmp.enable();
@@ -402,7 +414,7 @@ export class Tab extends Component {
     };
 
     togglePossibleComponent(element);
-    _.each($$(element).findAll('*'), (el) => {
+    _.each($$(element).findAll('*'), el => {
       togglePossibleComponent(el);
     });
   }

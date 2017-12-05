@@ -1,11 +1,13 @@
 import { $$, Dom } from './Dom';
 import { IQueryResult } from '../rest/QueryResult';
-import { IResultsComponentBindings } from '../ui/Base/ResultsComponentBindings';
 import { DateUtils } from './DateUtils';
 import { FileTypes } from '../ui/Misc/FileTypes';
 import { Utils } from './Utils';
 import { StringUtils } from './StringUtils';
-
+import { SVGIcons } from './SVGIcons';
+import { load } from '../ui/Base/RegisteredNamedMethods';
+import { Logger } from '../misc/Logger';
+import { IComponentBindings } from '../ui/Base/ComponentBindings';
 export class DomUtils {
   static getPopUpCloseButton(captionForClose: string, captionForReminder: string): string {
     let container = document.createElement('span');
@@ -33,7 +35,7 @@ export class DomUtils {
     let loadDotClass = 'coveo-loading-dot';
     let dom = document.createElement('div');
     dom.className = 'coveo-first-loading-animation';
-    dom.innerHTML = `<div class='coveo-logo' ></div>
+    dom.innerHTML = `<div class='coveo-logo'>${SVGIcons.icons.coveoLogo}</div>
     <div class='coveo-loading-container'>
       <div class='${loadDotClass}'></div>
       <div class='${loadDotClass}'></div>
@@ -47,7 +49,9 @@ export class DomUtils {
     let regex = new RegExp(Utils.escapeRegexCharacter(StringUtils.latinize(valueToSearch)), 'i');
     let firstChar = StringUtils.latinize(initialString).search(regex);
     let lastChar = firstChar + valueToSearch.length;
-    return `${StringUtils.htmlEncode(initialString.slice(0, firstChar))}<span class='coveo-highlight'>${StringUtils.htmlEncode(initialString.slice(firstChar, lastChar))}</span>${StringUtils.htmlEncode(initialString.slice(lastChar))}`;
+    return `${StringUtils.htmlEncode(initialString.slice(0, firstChar))}<span class='coveo-highlight'>${StringUtils.htmlEncode(
+      initialString.slice(firstChar, lastChar)
+    )}</span>${StringUtils.htmlEncode(initialString.slice(lastChar))}`;
   }
 
   static getLoadingSpinner(): HTMLElement {
@@ -70,13 +74,17 @@ export class DomUtils {
     return header;
   }
 
-  static getQuickviewHeader(result: IQueryResult, options: { showDate: boolean; title: string }, bindings: IResultsComponentBindings): Dom {
+  static getQuickviewHeader(result: IQueryResult, options: { showDate: boolean; title: string }, bindings: IComponentBindings): Dom {
     let date = '';
     if (options.showDate) {
-      date = DateUtils.dateTimeToString(new Date(Utils.getFieldValue(result, 'date')));
+      const dateValueFromResult = Utils.getFieldValue(result, 'date');
+      if (dateValueFromResult) {
+        date = DateUtils.dateTimeToString(new Date(dateValueFromResult));
+      }
     }
-    let fileType = FileTypes.get(result);
-    let header = $$('div');
+    const fileType = FileTypes.get(result);
+    const header = $$('div');
+
     header.el.innerHTML = `<div class='coveo-quickview-right-header'>
         <span class='coveo-quickview-time'>${date}</span>
         <span class='coveo-quickview-close-button'>
@@ -85,17 +93,30 @@ export class DomUtils {
       </div>
       <div class='coveo-quickview-left-header'>
         <span class='coveo-quickview-icon coveo-small ${fileType.icon}'></span>
-        <a class='coveo-quickview-pop-up-reminder'> ${options.title || ''}</a>
       </div>`;
-    new Coveo[Coveo['Salesforce'] ? 'SalesforceResultLink' : 'ResultLink'](header.find('.coveo-quickview-pop-up-reminder'), undefined, bindings, result);
+
+    const clickableLinkElement = $$('a', { className: 'coveo-quickview-pop-up-reminder' });
+
+    const toLoad = Coveo['Salesforce'] ? 'SalesforceResultLink' : 'ResultLink';
+
+    load(toLoad)
+      .then(() => {
+        new Coveo[toLoad](clickableLinkElement.el, undefined, bindings, { ...result, title: options.title });
+      })
+      .catch(err => {
+        const logger = new Logger(this);
+        logger.error(`Failed to load module ${toLoad} : ${err}`);
+        logger.info(`Fallback on displaying a non clickable header`);
+        clickableLinkElement.text(options.title);
+      })
+      .finally(() => {
+        $$(header.find('.coveo-quickview-left-header')).append(clickableLinkElement.el);
+      });
+
     return header;
   }
 
   static getCurrentScript(): HTMLScriptElement {
     return <HTMLScriptElement>document.currentScript;
-  }
-
-  static getElementsByTagName<K extends keyof ElementListTagNameMap>(tagname: K): ElementListTagNameMap[K] {
-    return document.getElementsByTagName(tagname);
   }
 }

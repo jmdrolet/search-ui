@@ -11,8 +11,12 @@ import { FacetUtils } from './FacetUtils';
 import * as _ from 'underscore';
 
 export class OmniboxValuesList {
-  constructor(public facet: Facet, public facetValues: FacetValue[], public omniboxObject: IPopulateOmniboxObject, public omniboxValueElementKlass: IOmniboxValueElementKlass) {
-  }
+  constructor(
+    public facet: Facet,
+    public facetValues: FacetValue[],
+    public omniboxObject: IPopulateOmniboxObject,
+    public omniboxValueElementKlass: IOmniboxValueElementKlass
+  ) {}
 
   public build() {
     var rows: HTMLElement[] = [];
@@ -54,7 +58,7 @@ export class OmniboxValuesList {
         className: 'coveo-omnibox-facet-value'
       }).el;
       ret.appendChild(header);
-      _.each(rows, (r) => {
+      _.each(rows, r => {
         ret.appendChild(r);
       });
       FacetUtils.addNoStateCssClassToFacetValues(this.facet, ret);
@@ -67,23 +71,20 @@ export class OmniboxValuesList {
     var header = $$('div', {
       className: 'coveo-omnibox-facet-header'
     }).el;
-    if (this.facet.searchInterface.isNewDesign()) {
-      $$(header).text(title);
-      return header;
-    } else {
-      var icon = $$('span', {
-        className: 'coveo-icon ' + this.facet.options.field.substr(1)
-      }).el;
-      header.appendChild(icon);
-      $$(header).text(title);
-    }
+    $$(header).text(title);
     return header;
   }
 
   private highlightOmniboxMatch(orignalStr: string, regex: RegExp, valueToSearch: string) {
     var firstChar = orignalStr.search(regex);
     var lastChar = firstChar + valueToSearch.length;
-    return orignalStr.slice(0, firstChar) + '<span class="coveo-highlight">' + orignalStr.slice(firstChar, lastChar) + '</span>' + orignalStr.slice(lastChar);
+    return (
+      orignalStr.slice(0, firstChar) +
+      '<span class="coveo-highlight">' +
+      orignalStr.slice(firstChar, lastChar) +
+      '</span>' +
+      orignalStr.slice(lastChar)
+    );
   }
 
   private logAnalyticsEvent(elem: ValueElement, cause: IAnalyticsActionCause) {

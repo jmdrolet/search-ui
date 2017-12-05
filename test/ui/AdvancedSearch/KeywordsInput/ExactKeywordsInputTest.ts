@@ -1,15 +1,16 @@
 import { ExactKeywordsInput } from '../../../../src/ui/AdvancedSearch/KeywordsInput/ExactKeywordsInput';
+import { $$ } from '../../../../src/utils/Dom';
 
 export function ExactKeywordsInputTest() {
   describe('ExactKeywordsInput', () => {
     let input: ExactKeywordsInput;
 
-    beforeEach(function () {
-      input = new ExactKeywordsInput();
+    beforeEach(function() {
+      input = new ExactKeywordsInput($$('div').el);
       input.build();
     });
 
-    afterEach(function () {
+    afterEach(function() {
       input = null;
     });
 
@@ -17,7 +18,7 @@ export function ExactKeywordsInputTest() {
       it('should return the values in quotes', () => {
         let value = 'starcraft starwars startrek';
         input.setValue(value);
-        expect(input.getValue()).toEqual('\"starcraft starwars startrek\"');
+        expect(input.getValue()).toEqual('"starcraft starwars startrek"');
       });
     });
   });

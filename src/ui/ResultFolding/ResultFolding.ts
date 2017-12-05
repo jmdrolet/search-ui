@@ -12,8 +12,11 @@ import { $$ } from '../../utils/Dom';
 import { l } from '../../strings/Strings';
 import * as _ from 'underscore';
 import { exportGlobally } from '../../GlobalExports';
+import { analyticsActionCauseList, IAnalyticsDocumentViewMeta } from '../Analytics/AnalyticsActionListMeta';
 
 import 'styling/_ResultFolding';
+import { SVGIcons } from '../../utils/SVGIcons';
+import { SVGDom } from '../../utils/SVGDom';
 
 export interface IResultFoldingOptions {
   resultTemplate?: Template;
@@ -38,17 +41,16 @@ export class ResultFolding extends Component {
 
   static doExport = () => {
     exportGlobally({
-      'ResultFolding': ResultFolding,
-      'DefaultFoldingTemplate': DefaultFoldingTemplate
+      ResultFolding: ResultFolding,
+      DefaultFoldingTemplate: DefaultFoldingTemplate
     });
-  }
+  };
 
   /**
    * The options for the component
    * @componentOptions
    */
   static options: IResultFoldingOptions = {
-
     /**
      * Specifies the template to use to render each of the child results for a top result.
      *
@@ -92,21 +94,23 @@ export class ResultFolding extends Component {
      *
      * Default value is the localized string for `ShowMore`.
      */
-    moreCaption: ComponentOptions.buildLocalizedStringOption({ postProcessing: (value) => value || l('ShowMore') }),
+    moreCaption: ComponentOptions.buildLocalizedStringOption({ postProcessing: value => value || l('ShowMore') }),
 
     /**
      * Specifies the caption to display on the link to shrink the loaded folding result set back to only the top result.
      *
      * Default value is the localized string for `ShowLess`.
      */
-    lessCaption: ComponentOptions.buildLocalizedStringOption({ postProcessing: (value) => value || l('ShowLess') }),
+    lessCaption: ComponentOptions.buildLocalizedStringOption({ postProcessing: value => value || l('ShowLess') }),
 
     /**
      * Specifies the caption to display when there is only one result in a folding result set.
      *
      * Default value is the localized string for `DisplayingTheOnlyMessage`
      */
-    oneResultCaption: ComponentOptions.buildLocalizedStringOption({ postProcessing: (value) => value || l('DisplayingTheOnlyMessage') })
+    oneResultCaption: ComponentOptions.buildLocalizedStringOption({
+      postProcessing: value => value || l('DisplayingTheOnlyMessage')
+    })
   };
 
   private normalCaption: HTMLElement;
@@ -128,7 +132,12 @@ export class ResultFolding extends Component {
    * automatically resolved (with a slower execution time).
    * @param result The result to associate the component with.
    */
-  constructor(public element: HTMLElement, public options?: IResultFoldingOptions, bindings?: IComponentBindings, public result?: IQueryResult) {
+  constructor(
+    public element: HTMLElement,
+    public options?: IResultFoldingOptions,
+    bindings?: IComponentBindings,
+    public result?: IQueryResult
+  ) {
     super(element, ResultFolding.ID, bindings);
 
     this.options = ComponentOptions.initComponentOptions(this.element, ResultFolding, options);
@@ -150,7 +159,8 @@ export class ResultFolding extends Component {
   }
 
   /**
-   *
+   * Show more results by fetching additional results from the index, which match the current folded conversation.
+   * This is the equivalent of clicking "Show all conversation".
    * @returns {Promise<IQueryResult[]>}
    */
   public showMoreResults() {
@@ -162,16 +172,20 @@ export class ResultFolding extends Component {
     this.results.appendChild(this.waitAnimation);
     this.updateElementVisibility();
 
-    let ret = this.moreResultsPromise
-      .then((results?: IQueryResult[]) => {
-        this.childResults = results;
-        this.showingMoreResults = true;
-        return this.displayThoseResults(results).then(() => {
-          this.updateElementVisibility(results.length);
-          return results;
-        });
-
+    let ret = this.moreResultsPromise.then((results?: IQueryResult[]) => {
+      this.childResults = results;
+      this.showingMoreResults = true;
+      this.usageAnalytics.logClickEvent<IAnalyticsDocumentViewMeta>(
+        analyticsActionCauseList.foldingShowMore,
+        this.getAnalyticsMetadata(),
+        this.result,
+        this.element
+      );
+      return this.displayThoseResults(results).then(() => {
+        this.updateElementVisibility(results.length);
+        return results;
       });
+    });
 
     ret.finally(() => {
       this.moreResultsPromise = undefined;
@@ -182,9 +196,17 @@ export class ResultFolding extends Component {
     return ret;
   }
 
+  /**
+   * Show less results for a given conversation. This is the equivalent of clicking "Show less"
+   */
   public showLessResults() {
     this.cancelAnyPendingShowMore();
     this.showingMoreResults = false;
+    this.usageAnalytics.logCustomEvent<IAnalyticsDocumentViewMeta>(
+      analyticsActionCauseList.foldingShowLess,
+      this.getAnalyticsMetadata(),
+      this.element
+    );
     this.displayThoseResults(this.result.childResults);
     this.updateElementVisibility();
     this.scrollToResultElement();
@@ -228,8 +250,18 @@ export class ResultFolding extends Component {
       $$(this.showLess).on('click', () => this.showLessResults());
       footer.appendChild(this.showLess);
 
-      let footerIconShowMore = $$('div', { className: 'coveo-more' }, $$('span', { className: 'coveo-folding-footer-icon' }).el).el;
-      let footerIconShowLess = $$('div', { className: 'coveo-less' }, $$('span', { className: 'coveo-folding-footer-icon' }).el).el;
+      let footerIconShowMore = $$(
+        'div',
+        { className: 'coveo-folding-more' },
+        $$('span', { className: 'coveo-folding-footer-icon' }, SVGIcons.icons.arrowDown).el
+      ).el;
+      SVGDom.addClassToSVGInContainer(footerIconShowMore, 'coveo-folding-more-svg');
+      let footerIconShowLess = $$(
+        'div',
+        { className: 'coveo-folding-less' },
+        $$('span', { className: 'coveo-folding-footer-icon' }, SVGIcons.icons.arrowUp).el
+      ).el;
+      SVGDom.addClassToSVGInContainer(footerIconShowLess, 'coveo-folding-less-svg');
       let showMoreLink = $$('a', { className: 'coveo-folding-show-more' }, this.options.moreCaption).el;
       let showLessLink = $$('a', { className: 'coveo-folding-show-less' }, this.options.lessCaption).el;
       this.showMore.appendChild(showMoreLink);
@@ -270,13 +302,13 @@ export class ResultFolding extends Component {
   }
 
   private displayThoseResults(results: IQueryResult[]): Promise<boolean> {
-    const childResultsPromises = _.map(results, (result) => {
+    const childResultsPromises = _.map(results, result => {
       return this.renderChildResult(result);
     });
 
     return Promise.all(childResultsPromises).then((childsToAppend: HTMLElement[]) => {
       $$(this.results).empty();
-      _.each(childsToAppend, (oneChild) => {
+      _.each(childsToAppend, oneChild => {
         this.results.appendChild(oneChild);
       });
       return true;
@@ -287,26 +319,32 @@ export class ResultFolding extends Component {
     QueryUtils.setStateObjectOnQueryResult(this.queryStateModel.get(), childResult);
     QueryUtils.setSearchInterfaceObjectOnQueryResult(this.searchInterface, childResult);
 
-    return this.options.resultTemplate.instantiateToElement(childResult, {
-      wrapInDiv: false,
-      checkCondition: false,
-      responsiveComponents: this.searchInterface.responsiveComponents
-    }).then((oneChild: HTMLElement) => {
-      $$(oneChild).addClass('coveo-result-folding-child-result');
+    return this.options.resultTemplate
+      .instantiateToElement(childResult, {
+        wrapInDiv: false,
+        checkCondition: false,
+        responsiveComponents: this.searchInterface.responsiveComponents
+      })
+      .then((oneChild: HTMLElement) => {
+        $$(oneChild).addClass('coveo-result-folding-child-result');
 
-      $$(oneChild).toggleClass('coveo-normal-child-result', !this.showingMoreResults);
-      $$(oneChild).toggleClass('coveo-expanded-child-result', this.showingMoreResults);
-      return this.autoCreateComponentsInsideResult(oneChild, childResult).initResult.then(() => {
-        return oneChild;
+        $$(oneChild).toggleClass('coveo-normal-child-result', !this.showingMoreResults);
+        $$(oneChild).toggleClass('coveo-expanded-child-result', this.showingMoreResults);
+        return this.autoCreateComponentsInsideResult(oneChild, childResult).initResult.then(() => {
+          return oneChild;
+        });
       });
-    });
   }
 
   private autoCreateComponentsInsideResult(element: HTMLElement, result: IQueryResult): IInitResult {
     Assert.exists(element);
 
     let initOptions = this.searchInterface.options;
-    let initParameters: IInitializationParameters = { options: initOptions, bindings: this.getBindings(), result: result };
+    let initParameters: IInitializationParameters = {
+      options: initOptions,
+      bindings: this.getBindings(),
+      result: result
+    };
     return Initialization.automaticallyCreateComponentsInside(element, initParameters);
   }
 
@@ -325,6 +363,14 @@ export class ResultFolding extends Component {
         this.showMoreResults();
       }
     });
+  }
+
+  private getAnalyticsMetadata(): IAnalyticsDocumentViewMeta {
+    return {
+      documentURL: this.result.clickUri,
+      documentTitle: this.result.title,
+      author: Utils.getFieldValue(this.result, 'author')
+    };
   }
 }
 

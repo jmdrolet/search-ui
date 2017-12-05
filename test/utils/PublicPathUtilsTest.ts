@@ -1,58 +1,70 @@
 import { DomUtils } from '../../src/utils/DomUtils';
 import { PublicPathUtils } from '../../src/utils/PublicPathUtils';
-import { $$ } from '../../src/utils/Dom';
 
 export function PublicPathUtilsTest() {
   describe('PublicPathUtils', () => {
     let currentScript;
-    let getElementsByTagName;
-    let expectedPath = 'some/path/';
-    let fakeScript = <HTMLScriptElement>{ src: `${expectedPath}script.js` };
+    const detectedPath = 'some/path/';
+    const configuredPath = 'path';
+
+    const fakeScript = <HTMLScriptElement>{ src: `${detectedPath}script.js` };
 
     beforeEach(() => {
       currentScript = DomUtils.getCurrentScript;
-      getElementsByTagName = DomUtils.getElementsByTagName;
       PublicPathUtils.reset();
       DomUtils.getCurrentScript = () => fakeScript;
     });
 
     afterEach(() => {
       DomUtils.getCurrentScript = currentScript;
-      DomUtils.getElementsByTagName = getElementsByTagName;
     });
 
-    it('should set webpack pulic path when configuring ressource root', () => {
-      PublicPathUtils.configureRessourceRoot('path');
-      expect(__webpack_public_path__).toBe('path');
+    it('should set webpack public path when configuring resource root', () => {
+      PublicPathUtils.configureResourceRoot(configuredPath);
+      expect(__webpack_public_path__).toBe(configuredPath);
     });
 
-    it('should detect the ressource root', () => {
-      PublicPathUtils.detectPublicPath();
-      expect(__webpack_public_path__).toBe(expectedPath);
+    it('should get the resource root', () => {
+      const result = PublicPathUtils.getDynamicPublicPath();
+      expect(result).toBe(detectedPath);
     });
 
-    it('should detect the ressource root with a hash value', () => {
-      let fakeScriptWithHashValue = <HTMLScriptElement>{ src: `${expectedPath}script.js#some=value&other=value` };
+    it('should get the resource root with a hash value', () => {
+      let fakeScriptWithHashValue = <HTMLScriptElement>{ src: `${detectedPath}script.js#some=value&other=value` };
       DomUtils.getCurrentScript = () => fakeScriptWithHashValue;
 
-      PublicPathUtils.detectPublicPath();
+      const result = PublicPathUtils.getDynamicPublicPath();
 
-      expect(__webpack_public_path__).toBe(expectedPath);
+      expect(result).toBe(detectedPath);
     });
 
-    it('should detect the ressource root with a url parameter', () => {
-      let fakeScriptWithUrlParam = <HTMLScriptElement>{ src: `${expectedPath}script.js?someParam=1&otherParam=2` };
+    it('should get the public path from the resource root with a url parameter', () => {
+      const fakeScriptWithUrlParam = <HTMLScriptElement>{ src: `${detectedPath}script.js?someParam=1&otherParam=2` };
       DomUtils.getCurrentScript = () => fakeScriptWithUrlParam;
 
-      PublicPathUtils.detectPublicPath();
+      const result = PublicPathUtils.getDynamicPublicPath();
 
-      expect(__webpack_public_path__).toBe(expectedPath);
+      expect(result).toBe(detectedPath);
     });
 
-    it('should use the last parsed script to detect ressource root when document.currentScript is not available', () => {
-      DomUtils.getElementsByTagName = () => [$$('script'), fakeScript];
+    it('should set webpack public path to the detected resource root', () => {
       PublicPathUtils.detectPublicPath();
-      expect(__webpack_public_path__).toBe(expectedPath);
+      expect(__webpack_public_path__).toBe(detectedPath);
+    });
+
+    it('should use the manually configured path even after detecting the path', () => {
+      PublicPathUtils.configureResourceRoot(configuredPath);
+      PublicPathUtils.detectPublicPath();
+
+      expect(__webpack_public_path__).toBe(configuredPath);
+    });
+
+    it('should detect the script after reseting the configured state', () => {
+      PublicPathUtils.configureResourceRoot(configuredPath);
+      PublicPathUtils.reset();
+      PublicPathUtils.detectPublicPath();
+
+      expect(__webpack_public_path__).toBe(detectedPath);
     });
   });
-};
+}

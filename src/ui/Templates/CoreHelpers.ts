@@ -20,7 +20,6 @@ import { FacetUtils } from '../Facet/FacetUtils';
 import * as Globalize from 'globalize';
 import { IStringMap } from '../../rest/GenericParam';
 import * as _ from 'underscore';
-import { ResultList } from '../ResultList/ResultList';
 import { Component } from '../Base/Component';
 
 /**
@@ -94,10 +93,12 @@ export interface ICoreHelpers {
    * - `phraseToHighlight`: Optional. The phrases to highlight (see {@link IHighlightPhrase})
    * - `options`: Optional. The options defined below as {@link IStreamHighlightOptions}
    */
-  highlightStreamText: (content: string,
+  highlightStreamText: (
+    content: string,
     termsToHighlight: IHighlightTerm,
     phrasesToHighlight: IHighlightPhrase,
-    options?: IStreamHighlightOptions) => string;
+    options?: IStreamHighlightOptions
+  ) => string;
   /**
    * This helper operates exactly like the {@link highlightStreamText} helper, except
    * that it should be used to highlight HTML content. The helper takes care
@@ -108,10 +109,12 @@ export interface ICoreHelpers {
    * - `phraseToHighlight`: Optional. The phrases to highlight (see {@link IHighlightPhrase})
    * - `options`: Optional. The options defined below as {@link IStreamHighlightOptions}
    */
-  highlightStreamHTML: (content: string,
+  highlightStreamHTML: (
+    content: string,
     termsToHighlight: IHighlightTerm,
     phrasesToHighlight: IHighlightPhrase,
-    options?: IStreamHighlightOptions) => string;
+    options?: IStreamHighlightOptions
+  ) => string;
   /**
    * Formats a numeric value using the format string.
    *
@@ -290,9 +293,7 @@ export interface ICoreHelpers {
    * If it's a mobile device, return the type of device (Android, iPhone, iPad) etc.
    */
   isMobileDevice: () => string;
-
 }
-
 
 /**
  * Available options for the size templateHelpers.
@@ -308,9 +309,25 @@ export interface ISizeOptions {
   precision?: number;
 }
 
+export interface IShortenOptions {
+  length: number;
+  highlights?: IHighlight[];
+  cssClass?: string;
+}
+
+export interface IHighlightsOptions {
+  highlights: IHighlight[];
+  cssClass?: string;
+}
+
+export interface IHelperStreamHighlightOptions {
+  termsToHighlight: IHighlightTerm;
+  phrasesToHighlight: IHighlightPhrase;
+  opts?: IStreamHighlightOptions;
+}
+
 export class CoreHelpers {
-  public constructor() {
-  }
+  public constructor() {}
 
   /**
    * For backward compatibility reason, the "global" template helper should be available under the
@@ -330,70 +347,160 @@ TemplateHelpers.registerFieldHelper('javascriptEncode', (value: string) => {
   return Utils.exists(value) ? StringUtils.javascriptEncode(value) : undefined;
 });
 
-TemplateHelpers.registerTemplateHelper('shorten', (content: string, length: number, highlights?: IHighlight[], cssClass?: string) => {
-  var strAndHoles = StringAndHoles.shortenString(content, length, '...');
-
-  if (Utils.exists(highlights)) {
-    return HighlightUtils.highlightString(strAndHoles.value, highlights, strAndHoles.holes, cssClass || 'highlight');
+const executeShorten = (content: string, options: IShortenOptions) => {
+  const strAndHoles = StringAndHoles.shortenString(content, options.length, '...');
+  if (Utils.exists(options.highlights)) {
+    return HighlightUtils.highlightString(strAndHoles.value, options.highlights, strAndHoles.holes, options.cssClass || 'highlight');
   } else {
     return strAndHoles.value;
   }
+};
+
+TemplateHelpers.registerTemplateHelper('shorten', (content: string, length: number, highlights?: IHighlight[], cssClass?: string) => {
+  return executeShorten(content, {
+    length,
+    highlights,
+    cssClass
+  });
 });
+
+TemplateHelpers.registerTemplateHelper('shortenv2', (content: string, options: IShortenOptions) => {
+  return executeShorten(content, options);
+});
+
+const executeShortenPath = (content: string, options: IShortenOptions) => {
+  const strAndHoles = StringAndHoles.shortenPath(content, options.length);
+  if (Utils.exists(options.highlights)) {
+    return HighlightUtils.highlightString(strAndHoles.value, options.highlights, strAndHoles.holes, options.cssClass || 'highlight');
+  } else {
+    return strAndHoles.value;
+  }
+};
 
 TemplateHelpers.registerTemplateHelper('shortenPath', (content: string, length: number, highlights?: IHighlight[], cssClass?: string) => {
-  var strAndHoles = StringAndHoles.shortenPath(content, length);
+  return executeShortenPath(content, {
+    length,
+    highlights,
+    cssClass
+  });
+});
 
-  if (Utils.exists(highlights)) {
-    return HighlightUtils.highlightString(strAndHoles.value, highlights, strAndHoles.holes, cssClass || 'highlight');
+TemplateHelpers.registerFieldHelper('shortenPathv2', (content: string, options: IShortenOptions) => {
+  return executeShortenPath(content, options);
+});
+
+const executeShortenUri = (content: string, options: IShortenOptions) => {
+  const strAndHoles = StringAndHoles.shortenUri(content, options.length);
+
+  if (Utils.exists(options.highlights)) {
+    return HighlightUtils.highlightString(strAndHoles.value, options.highlights, strAndHoles.holes, options.cssClass || 'highlight');
   } else {
     return strAndHoles.value;
   }
-});
+};
 
 TemplateHelpers.registerTemplateHelper('shortenUri', (content: string, length: number, highlights?: IHighlight[], cssClass?: string) => {
-  var strAndHoles = StringAndHoles.shortenUri(content, length);
-
-  if (Utils.exists(highlights)) {
-    return HighlightUtils.highlightString(strAndHoles.value, highlights, strAndHoles.holes, cssClass || 'highlight');
-  } else {
-    return strAndHoles.value;
-  }
+  return executeShortenUri(content, {
+    length,
+    highlights,
+    cssClass
+  });
 });
+
+TemplateHelpers.registerTemplateHelper('shortenUriv2', (content: string, options: IShortenOptions) => {
+  return executeShortenUri(content, options);
+});
+
+const executeHighlight = (content: string, options: IHighlightsOptions) => {
+  if (Utils.exists(content)) {
+    if (Utils.exists(options.highlights)) {
+      return HighlightUtils.highlightString(content, options.highlights, null, options.cssClass || 'highlight');
+    } else {
+      return content;
+    }
+  } else {
+    return undefined;
+  }
+};
 
 TemplateHelpers.registerTemplateHelper('highlight', (content: string, highlights: IHighlight[], cssClass?: string) => {
-  if (Utils.exists(content)) {
-    if (Utils.exists(highlights)) {
-      return HighlightUtils.highlightString(content, highlights, null, cssClass || 'highlight');
-    } else {
-      return content;
-    }
-  } else {
-    return undefined;
-  }
+  return executeHighlight(content, {
+    highlights,
+    cssClass
+  });
 });
 
-TemplateHelpers.registerTemplateHelper('highlightStreamText', (content: string, termsToHighlight = resolveTermsToHighlight(), phrasesToHighlight = resolvePhrasesToHighlight(), opts?: IStreamHighlightOptions) => {
-  if (Utils.exists(content) && Utils.exists(termsToHighlight) && Utils.exists(phrasesToHighlight)) {
-    if (termsToHighlightAreDefined(termsToHighlight, phrasesToHighlight)) {
-      return StreamHighlightUtils.highlightStreamText(content, termsToHighlight, phrasesToHighlight, opts);
-    } else {
-      return content;
-    }
-  } else {
-    return undefined;
-  }
+TemplateHelpers.registerTemplateHelper('highlightv2', (content: string, options: IHighlightsOptions) => {
+  return executeHighlight(content, options);
 });
 
-TemplateHelpers.registerTemplateHelper('highlightStreamHTML', (content: string, termsToHighlight = resolveTermsToHighlight(), phrasesToHighlight = resolvePhrasesToHighlight(), opts?: IStreamHighlightOptions) => {
-  if (Utils.exists(content) && Utils.exists(termsToHighlight) && Utils.exists(phrasesToHighlight)) {
-    if (termsToHighlightAreDefined(termsToHighlight, phrasesToHighlight)) {
-      return StreamHighlightUtils.highlightStreamHTML(content, termsToHighlight, phrasesToHighlight, opts);
+const executeHighlightStreamText = (content: string, options: IHelperStreamHighlightOptions) => {
+  if (Utils.exists(content) && Utils.exists(options.termsToHighlight) && Utils.exists(options.phrasesToHighlight)) {
+    if (termsToHighlightAreDefined(options.termsToHighlight, options.phrasesToHighlight)) {
+      return StreamHighlightUtils.highlightStreamText(content, options.termsToHighlight, options.phrasesToHighlight, options.opts);
     } else {
       return content;
     }
   } else {
     return undefined;
   }
+};
+
+TemplateHelpers.registerTemplateHelper(
+  'highlightStreamText',
+  (
+    content: string,
+    termsToHighlight = resolveTermsToHighlight(),
+    phrasesToHighlight = resolvePhrasesToHighlight(),
+    opts?: IStreamHighlightOptions
+  ) => {
+    return executeHighlightStreamText(content, {
+      termsToHighlight,
+      phrasesToHighlight,
+      opts
+    });
+  }
+);
+
+TemplateHelpers.registerTemplateHelper('highlightStreamTextv2', (content: string, options: IHelperStreamHighlightOptions) => {
+  const mergedOptions = {
+    termsToHighlight: resolveTermsToHighlight(),
+    phrasesToHighlight: resolvePhrasesToHighlight(),
+    ...options
+  };
+  return executeHighlightStreamText(content, mergedOptions);
+});
+
+const executeHighlightStreamHTML = (content: string, options: IHelperStreamHighlightOptions) => {
+  if (Utils.exists(content) && Utils.exists(options.termsToHighlight) && Utils.exists(options.phrasesToHighlight)) {
+    if (termsToHighlightAreDefined(options.termsToHighlight, options.phrasesToHighlight)) {
+      return StreamHighlightUtils.highlightStreamHTML(content, options.termsToHighlight, options.phrasesToHighlight, options.opts);
+    } else {
+      return content;
+    }
+  } else {
+    return undefined;
+  }
+};
+
+TemplateHelpers.registerTemplateHelper(
+  'highlightStreamHTML',
+  (
+    content: string,
+    termsToHighlight = resolveTermsToHighlight(),
+    phrasesToHighlight = resolvePhrasesToHighlight(),
+    opts?: IStreamHighlightOptions
+  ) => {
+    return executeHighlightStreamHTML(content, {
+      termsToHighlight,
+      phrasesToHighlight,
+      opts
+    });
+  }
+);
+
+TemplateHelpers.registerTemplateHelper('highlightStreamHTMLv2', (content: string, options: IHelperStreamHighlightOptions) => {
+  return executeHighlightStreamHTML(content, options);
 });
 
 TemplateHelpers.registerFieldHelper('number', (value: any, options?: any) => {
@@ -472,12 +579,12 @@ TemplateHelpers.registerFieldHelper('email', (value: string | string[], ...args:
 TemplateHelpers.registerTemplateHelper('excessEmailToggle', (target: HTMLElement) => {
   $$(target).removeClass('coveo-active');
   if ($$(target).hasClass('coveo-emails-excess-collapsed')) {
-    _.each($$(target).siblings('.coveo-emails-excess-expanded'), (sibling) => {
+    _.each($$(target).siblings('.coveo-emails-excess-expanded'), sibling => {
       $$(sibling).addClass('coveo-active');
     });
   } else if ($$(target).hasClass('coveo-hide-expanded')) {
     $$(target.parentElement).addClass('coveo-inactive');
-    _.each($$(target.parentElement).siblings('.coveo-emails-excess-collapsed'), (sibling) => {
+    _.each($$(target.parentElement).siblings('.coveo-emails-excess-collapsed'), sibling => {
       $$(sibling).addClass('coveo-active');
     });
   }
@@ -492,11 +599,14 @@ TemplateHelpers.registerFieldHelper('image', (src: string, options?: IImageUtils
   return ImageUtils.buildImage(src, options);
 });
 
-TemplateHelpers.registerTemplateHelper('thumbnail', (result: IQueryResult = resolveQueryResult(), endpoint: string = 'default', options?: IImageUtilsOptions) => {
-  if (QueryUtils.hasThumbnail(result)) {
-    return ImageUtils.buildImageFromResult(result, SearchEndpoint.endpoints[endpoint], options);
+TemplateHelpers.registerTemplateHelper(
+  'thumbnail',
+  (result: IQueryResult = resolveQueryResult(), endpoint: string = 'default', options?: IImageUtilsOptions) => {
+    if (QueryUtils.hasThumbnail(result)) {
+      return ImageUtils.buildImageFromResult(result, SearchEndpoint.endpoints[endpoint], options);
+    }
   }
-});
+);
 
 TemplateHelpers.registerTemplateHelper('fromFileTypeToIcon', (result: IQueryResult = resolveQueryResult(), options = {}) => {
   let icon = Component.getComponentRef('Icon');
@@ -506,9 +616,9 @@ TemplateHelpers.registerTemplateHelper('fromFileTypeToIcon', (result: IQueryResu
 });
 
 TemplateHelpers.registerTemplateHelper('attrEncode', (value: string) => {
-  return ('' + value)/* Forces the conversion to string. */
-    .replace(/&/g, '&amp;')/* This MUST be the 1st replacement. */
-    .replace(/'/g, '&apos;')/* The 4 other predefined entities, required. */
+  return ('' + value) /* Forces the conversion to string. */
+    .replace(/&/g, '&amp;') /* This MUST be the 1st replacement. */
+    .replace(/'/g, '&apos;') /* The 4 other predefined entities, required. */
     .replace(/'/g, '&quot;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
@@ -544,8 +654,8 @@ const byteMeasure = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB'];
 
 TemplateHelpers.registerFieldHelper('size', (value: any, options?: ISizeOptions) => {
   var size = parseInt(value, 10);
-  var precision = (options != null && options.precision != null ? options.precision : 2);
-  var base = (options != null && options.base != null ? options.base : 0);
+  var precision = options != null && options.precision != null ? options.precision : 2;
+  var base = options != null && options.base != null ? options.base : 0;
   while (size > 1024 && base + 1 < byteMeasure.length) {
     size /= 1024;
     base++;

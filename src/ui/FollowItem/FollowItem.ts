@@ -9,14 +9,17 @@ import { Initialization } from '../Base/Initialization';
 import { l } from '../../strings/Strings';
 import { $$, Dom } from '../../utils/Dom';
 import {
-  analyticsActionCauseList, IAnalyticsSearchAlertsFollowDocumentMeta, IAnalyticsActionCause
+  analyticsActionCauseList,
+  IAnalyticsSearchAlertsFollowDocumentMeta,
+  IAnalyticsActionCause
 } from '../Analytics/AnalyticsActionListMeta';
 import { QueryUtils } from '../../utils/QueryUtils';
 import * as _ from 'underscore';
 import { Utils } from '../../utils/Utils';
 import { KeyboardUtils, KEYBOARD } from '../../utils/KeyboardUtils';
 import { exportGlobally } from '../../GlobalExports';
-
+import { SVGIcons } from '../../utils/SVGIcons';
+import { SVGDom } from '../../utils/SVGDom';
 
 export interface IFollowItemOptions {
   watchedFields?: IFieldOption[];
@@ -24,8 +27,8 @@ export interface IFollowItemOptions {
 }
 
 /**
- * The FollowItem component renders a widget that the end user can click to follow a particular item (document). A user
- * following an item receives email notifications when the item changes.
+ * The FollowItem component renders a widget that the end user can click to follow a particular item. A user following
+ * an item receives email notifications when the item changes.
  *
  * **Note:**
  * > A {@link SearchAlerts} component must be present in the page for this component to work. It is also necessary to
@@ -39,16 +42,15 @@ export class FollowItem extends Component {
 
   static doExport = () => {
     exportGlobally({
-      'FollowItem': FollowItem
+      FollowItem: FollowItem
     });
-  }
+  };
 
   /**
    * The options for the follow item component
    * @componentOptions
    */
   static options: IFollowItemOptions = {
-
     /**
      * Specifies the {@link ISubscriptionItemRequest.watchedFields} to use when sending the
      * {@link ISubscriptionItemRequest}.
@@ -63,7 +65,7 @@ export class FollowItem extends Component {
      *
      * Default value is `undefined`.
      */
-    modifiedDateField: ComponentOptions.buildStringOption(),
+    modifiedDateField: ComponentOptions.buildStringOption()
   };
 
   private container: Dom;
@@ -78,11 +80,12 @@ export class FollowItem extends Component {
    * automatically resolved (with a slower execution time)
    * @param result The result to associate the component with.
    */
-  constructor(public element: HTMLElement,
+  constructor(
+    public element: HTMLElement,
     public options?: IFollowItemOptions,
     public bindings?: IResultsComponentBindings,
-    public result?: IQueryResult) {
-
+    public result?: IQueryResult
+  ) {
     super(element, FollowItem.ID, bindings);
 
     this.options = ComponentOptions.initComponentOptions(element, FollowItem, options);
@@ -91,6 +94,10 @@ export class FollowItem extends Component {
 
     this.container = $$(this.element);
     this.text = $$('span');
+    const icon = this.buildIcon();
+    const loadingIcon = this.buildLoadingIcon();
+    this.container.append(icon);
+    this.container.append(loadingIcon);
     this.container.append(this.text.el);
     this.container.on('click', () => this.toggleFollow());
     this.container.setAttribute('tabindex', '0');
@@ -130,10 +137,11 @@ export class FollowItem extends Component {
       this.container.addClass('coveo-follow-item-loading');
       if (this.subscription.id) {
         this.logAnalyticsEvent(analyticsActionCauseList.searchAlertsUnfollowDocument);
-        this.queryController.getEndpoint()
+        this.queryController
+          .getEndpoint()
           .deleteSubscription(this.subscription)
           .then(() => {
-            let eventArgs: ISearchAlertsEventArgs = {
+            const eventArgs: ISearchAlertsEventArgs = {
               subscription: this.subscription,
               dom: this.element
             };
@@ -141,16 +149,18 @@ export class FollowItem extends Component {
           })
           .catch(() => {
             this.container.removeClass('coveo-follow-item-loading');
-            let eventArgs: ISearchAlertsFailEventArgs = {
+            const eventArgs: ISearchAlertsFailEventArgs = {
               dom: this.element
             };
             $$(this.root).trigger(SearchAlertsEvents.searchAlertsFail, eventArgs);
           });
       } else {
         this.logAnalyticsEvent(analyticsActionCauseList.searchAlertsFollowDocument);
-        this.queryController.getEndpoint().follow(this.subscription)
+        this.queryController
+          .getEndpoint()
+          .follow(this.subscription)
           .then((subscription: ISubscription) => {
-            let eventArgs: ISearchAlertsEventArgs = {
+            const eventArgs: ISearchAlertsEventArgs = {
               subscription: subscription,
               dom: this.element
             };
@@ -158,7 +168,7 @@ export class FollowItem extends Component {
           })
           .catch(() => {
             this.container.removeClass('coveo-follow-item-loading');
-            let eventArgs: ISearchAlertsFailEventArgs = {
+            const eventArgs: ISearchAlertsFailEventArgs = {
               dom: this.element
             };
             $$(this.root).trigger(SearchAlertsEvents.searchAlertsFail, eventArgs);
@@ -172,12 +182,13 @@ export class FollowItem extends Component {
   }
 
   private updateIsFollowed() {
-    this.queryController.getEndpoint()
+    this.queryController
+      .getEndpoint()
       .listSubscriptions()
       .then((subscriptions: ISubscription[]) => {
         if (_.isArray(subscriptions)) {
-          let subscription: ISubscription = _.find(subscriptions, (subscription: ISubscription) => {
-            let typeConfig = <ISubscriptionItemRequest>subscription.typeConfig;
+          const subscription: ISubscription = _.find(subscriptions, (subscription: ISubscription) => {
+            const typeConfig = <ISubscriptionItemRequest>subscription.typeConfig;
             return typeConfig && typeConfig.id != null && typeConfig.id == this.getId();
           });
           if (subscription != null) {
@@ -193,10 +204,21 @@ export class FollowItem extends Component {
         this.remove();
       });
   }
+  private buildIcon(): HTMLElement {
+    const icon = $$('span', { className: 'coveo-follow-item-icon' }, SVGIcons.icons.dropdownFollowQuery);
+    SVGDom.addClassToSVGInContainer(icon.el, 'coveo-follow-item-icon-svg');
+    return icon.el;
+  }
+
+  private buildLoadingIcon(): HTMLElement {
+    const loadingIcon = $$('span', { className: 'coveo-follow-item-icon-loading' }, SVGIcons.icons.loading);
+    SVGDom.addClassToSVGInContainer(loadingIcon.el, 'coveo-follow-item-icon-loading-svg');
+    return loadingIcon.el;
+  }
 
   private handleSubscriptionDeleted(args: ISearchAlertsEventArgs) {
     if (args.subscription && args.subscription.type == SUBSCRIPTION_TYPE.followDocument) {
-      let typeConfig = <ISubscriptionItemRequest>args.subscription.typeConfig;
+      const typeConfig = <ISubscriptionItemRequest>args.subscription.typeConfig;
       if (typeConfig.id == this.getId()) {
         this.setNotFollowed();
       }
@@ -205,7 +227,7 @@ export class FollowItem extends Component {
 
   private handleSubscriptionCreated(args: ISearchAlertsEventArgs) {
     if (args.subscription && args.subscription.type == SUBSCRIPTION_TYPE.followDocument) {
-      let typeConfig = <ISubscriptionItemRequest>args.subscription.typeConfig;
+      const typeConfig = <ISubscriptionItemRequest>args.subscription.typeConfig;
       if (typeConfig.id == this.getId()) {
         this.setFollowed(args.subscription);
       }
@@ -221,7 +243,7 @@ export class FollowItem extends Component {
   }
 
   private static buildFollowRequest(id: string, title: string, options: IFollowItemOptions): ISubscriptionRequest {
-    let typeCofig: ISubscriptionItemRequest = {
+    const typeCofig: ISubscriptionItemRequest = {
       id: id,
       title: title
     };
@@ -242,14 +264,18 @@ export class FollowItem extends Component {
   }
 
   private logAnalyticsEvent(type: IAnalyticsActionCause) {
-    this.usageAnalytics.logCustomEvent<IAnalyticsSearchAlertsFollowDocumentMeta>(type, {
-      author: QueryUtils.getAuthor(this.result),
-      documentLanguage: QueryUtils.getLanguage(this.result),
-      documentSource: QueryUtils.getSource(this.result),
-      documentTitle: this.result.title,
-      contentIDValue: QueryUtils.getPermanentId(this.result).fieldValue,
-      contentIDKey: QueryUtils.getPermanentId(this.result).fieldUsed
-    }, this.element);
+    this.usageAnalytics.logCustomEvent<IAnalyticsSearchAlertsFollowDocumentMeta>(
+      type,
+      {
+        author: QueryUtils.getAuthor(this.result),
+        documentLanguage: QueryUtils.getLanguage(this.result),
+        documentSource: QueryUtils.getSource(this.result),
+        documentTitle: this.result.title,
+        contentIDValue: QueryUtils.getPermanentId(this.result).fieldValue,
+        contentIDKey: QueryUtils.getPermanentId(this.result).fieldUsed
+      },
+      this.element
+    );
   }
 }
 

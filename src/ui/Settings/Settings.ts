@@ -3,13 +3,14 @@ import { IComponentBindings } from '../Base/ComponentBindings';
 import { ComponentOptions } from '../Base/ComponentOptions';
 import { InitializationEvents } from '../../events/InitializationEvents';
 import { $$ } from '../../utils/Dom';
-import { PopupUtils, IPosition, HorizontalAlignment, VerticalAlignment } from '../../utils/PopupUtils';
+import { PopupUtils, IPopupPosition, PopupHorizontalAlignment, PopupVerticalAlignment } from '../../utils/PopupUtils';
 import { IMenuItem } from '../Menu/MenuItem';
 import { SettingsEvents } from '../../events/SettingsEvents';
 import { Initialization } from '../Base/Initialization';
 import * as _ from 'underscore';
 import { exportGlobally } from '../../GlobalExports';
 import 'styling/_Settings';
+import { SVGDom } from '../../utils/SVGDom';
 
 export interface ISettingsPopulateMenuArgs {
   settings: Settings;
@@ -37,17 +38,15 @@ export class Settings extends Component {
 
   static doExport = () => {
     exportGlobally({
-      'Settings': Settings
+      Settings: Settings
     });
-  }
-
+  };
 
   /**
    * The options for Settings
    * @componentOptions
    */
   static options: ISettingsOptions = {
-
     /**
      * Specifies the delay (in milliseconds) before hiding the popup menu when the cursor is not hovering over it.
      *
@@ -85,7 +84,6 @@ export class Settings extends Component {
     $$(this.menu).on('mouseleave', () => this.mouseleave());
     $$(this.menu).on('mouseenter', () => this.mouseenter());
     PopupUtils.positionPopup(this.menu, this.element, this.root, this.getPopupPositioning(), this.root);
-
   }
 
   /**
@@ -100,15 +98,10 @@ export class Settings extends Component {
   }
 
   private init() {
-    if (this.searchInterface.isNewDesign()) {
-      var square = $$('span', { className: 'coveo-settings-square' }).el;
-      var squares = $$('span', { className: 'coveo-settings-squares' }).el;
-      _.times(3, () => squares.appendChild(square.cloneNode()));
-      this.element.appendChild(squares);
-    } else {
-      var icon = $$('span', { className: 'coveo-settings-icon' }).el;
-      this.element.appendChild(icon);
-    }
+    var square = $$('span', { className: 'coveo-settings-square' }).el;
+    var squares = $$('span', { className: 'coveo-settings-squares' }).el;
+    _.times(3, () => squares.appendChild(square.cloneNode()));
+    this.element.appendChild(squares);
 
     $$(this.element).on('click', () => {
       if (this.isOpened) {
@@ -129,16 +122,23 @@ export class Settings extends Component {
       menuData: []
     };
     $$(this.root).trigger(SettingsEvents.settingsPopulateMenu, settingsPopulateMenuArgs);
-    _.each(settingsPopulateMenuArgs.menuData, (menuItem) => {
+    _.each(settingsPopulateMenuArgs.menuData, menuItem => {
       var menuItemDom = $$('div', {
         className: `coveo-settings-item ${menuItem.className}`,
         title: _.escape(menuItem.tooltip || '')
       }).el;
-      menuItemDom.appendChild($$('div', { className: 'coveo-icon' }).el);
+      let icon = $$('div', { className: 'coveo-icon' }).el;
+      if (menuItem.svgIcon) {
+        icon.innerHTML = menuItem.svgIcon;
+        if (menuItem.svgIconClassName) {
+          SVGDom.addClassToSVGInContainer(icon, menuItem.svgIconClassName);
+        }
+      }
+      menuItemDom.appendChild(icon);
       menuItemDom.appendChild($$('div', { className: 'coveo-settings-text' }, _.escape(menuItem.text)).el);
       $$(menuItemDom).on('click', () => {
         this.close();
-        _.each(settingsPopulateMenuArgs.menuData, (menuItem) => {
+        _.each(settingsPopulateMenuArgs.menuData, menuItem => {
           menuItem.onClose && menuItem.onClose();
         });
         menuItem.onOpen();
@@ -159,10 +159,10 @@ export class Settings extends Component {
     clearTimeout(this.closeTimeout);
   }
 
-  private getPopupPositioning(): IPosition {
+  private getPopupPositioning(): IPopupPosition {
     return {
-      horizontal: HorizontalAlignment.INNERRIGHT,
-      vertical: VerticalAlignment.BOTTOM,
+      horizontal: PopupHorizontalAlignment.INNERRIGHT,
+      vertical: PopupVerticalAlignment.BOTTOM,
       verticalOffset: 8
     };
   }

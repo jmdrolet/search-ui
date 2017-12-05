@@ -6,9 +6,10 @@ import { l } from '../../strings/Strings';
 import { IAnalyticsNoMeta, analyticsActionCauseList } from '../Analytics/AnalyticsActionListMeta';
 import { Initialization } from '../Base/Initialization';
 import { exportGlobally } from '../../GlobalExports';
+import { SVGIcons } from '../../utils/SVGIcons';
+import { SVGDom } from '../../utils/SVGDom';
 
-export interface ISearchButtonOptions {
-}
+export interface ISearchButtonOptions {}
 
 /**
  * The SearchButton component renders a search icon that the end user can click to trigger a new query.
@@ -21,9 +22,9 @@ export class SearchButton extends Component {
 
   static doExport = () => {
     exportGlobally({
-      'SearchButton': SearchButton
+      SearchButton: SearchButton
     });
-  }
+  };
 
   static options: ISearchButtonOptions = {};
 
@@ -37,10 +38,16 @@ export class SearchButton extends Component {
   constructor(public element: HTMLElement, public options?: ISearchButtonOptions, bindings?: IComponentBindings) {
     super(element, SearchButton.ID, bindings);
 
+    $$(element).setAttribute('aria-label', l('Search'));
     this.bind.on(element, 'click', () => this.handleClick());
     // Provide a magnifier icon if element contains nothing
     if (Utils.trim($$(this.element).text()) == '') {
-      element.innerHTML = '<span class=\'coveo-icon\'>' + l('Search') + '</span>';
+      const svgMagnifierContainer = $$('span', { className: 'coveo-search-button' }, SVGIcons.icons.search).el;
+      SVGDom.addClassToSVGInContainer(svgMagnifierContainer, 'coveo-search-button-svg');
+      const svgLoadingAnimationContainer = $$('span', { className: 'coveo-search-button-loading' }, SVGIcons.icons.loading).el;
+      SVGDom.addClassToSVGInContainer(svgLoadingAnimationContainer, 'coveo-search-button-loading-svg');
+      element.appendChild(svgMagnifierContainer);
+      element.appendChild(svgLoadingAnimationContainer);
     }
   }
 

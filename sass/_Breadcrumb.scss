@@ -13,6 +13,10 @@
   @include align-items(flex-start);
 }
 
+.coveo-no-results .CoveoBreadcrumb {
+  text-align: left;
+}
+
 .coveo-breadcrumb-clear-all {
   @include clickable();
   display: inline-block;
@@ -20,14 +24,15 @@
   & > div {
     display: inline-block;
   }
-  @include clearButton('.coveo-breadcrumb-icon-clear-all');
   @include defaultRoundedBorder();
   padding: 5px;
   margin-left: 5px;
   @include flex-shrink(0);
+  @include clearButton('.coveo-breadcrumb-clear-all-icon');
 }
 
-.coveo-breadcrumb-icon-clear-all {
+.coveo-breadcrumb-clear-all-icon {
+  top: 1px;
   margin-right: 5px;
 }
 
@@ -41,7 +46,7 @@
   margin: 5px 0px 5px 0px;
 }
 
-@include mediaSelector(800) {
+@include smallScreenWidth() {
   .CoveoBreadcrumb {
     padding: 10px;
   }

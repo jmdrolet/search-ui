@@ -2,16 +2,20 @@ import { Component } from '../Base/Component';
 import { ComponentOptions } from '../Base/ComponentOptions';
 import { IComponentBindings } from '../Base/ComponentBindings';
 import {
-  SearchAlertsEvents, ISearchAlertsEventArgs, ISearchAlertsFailEventArgs,
+  SearchAlertsEvents,
+  ISearchAlertsEventArgs,
+  ISearchAlertsFailEventArgs,
   ISearchAlertsPopulateMessageEventArgs
 } from '../../events/SearchAlertEvents';
 import { QueryEvents } from '../../events/QueryEvents';
-import { ISubscriptionItemRequest, SUBSCRIPTION_TYPE, ISubscriptionQueryRequest } from '../../rest/Subscription';
-import { PopupUtils, HorizontalAlignment, VerticalAlignment } from '../../utils/PopupUtils';
+import { SUBSCRIPTION_TYPE, ISubscriptionQueryRequest } from '../../rest/Subscription';
+import { PopupUtils, PopupHorizontalAlignment, PopupVerticalAlignment } from '../../utils/PopupUtils';
 import { l } from '../../strings/Strings';
 import { $$, Dom } from '../../utils/Dom';
 import * as _ from 'underscore';
 import { ISearchAlertsPopulateMessageText } from '../../events/SearchAlertEvents';
+import { SVGIcons } from '../../utils/SVGIcons';
+import { SVGDom } from '../../utils/SVGDom';
 
 export interface ISearchAlertMessageOptions {
   closeDelay: number;
@@ -31,13 +35,12 @@ export class SearchAlertsMessage extends Component {
    * @componentOptions
    */
   static options: ISearchAlertMessageOptions = {
-
     /**
      * Specifies how long to display the search alerts messages (in milliseconds).
      *
-     * Default value is `3000`. Minimum value is `0`.
+     * Default value is `2000`. Minimum value is `0`.
      */
-    closeDelay: ComponentOptions.buildNumberOption({ defaultValue: 3000, min: 0 }),
+    closeDelay: ComponentOptions.buildNumberOption({ defaultValue: 2000, min: 0 })
   };
 
   private message: Dom;
@@ -50,16 +53,12 @@ export class SearchAlertsMessage extends Component {
    * @param bindings The bindings that the component requires to function normally. If not set, these will be
    * automatically resolved (with a slower execution time).
    */
-  constructor(public element: HTMLElement,
-    public options: ISearchAlertMessageOptions,
-    public bindings?: IComponentBindings) {
-
+  constructor(public element: HTMLElement, public options: ISearchAlertMessageOptions, public bindings?: IComponentBindings) {
     super(element, SearchAlertsMessage.ID, bindings);
 
     this.bind.onRootElement(SearchAlertsEvents.searchAlertsCreated, (args: ISearchAlertsEventArgs) => this.handleSubscriptionCreated(args));
     this.bind.oneRootElement(SearchAlertsEvents.searchAlertsFail, (args: ISearchAlertsEventArgs) => this.handleSearchAlertsFail(args));
     this.bind.oneRootElement(SearchAlertsEvents.searchAlertsDeleted, () => this.close());
-
     this.bind.oneRootElement(QueryEvents.newQuery, () => this.close());
   }
 
@@ -73,7 +72,7 @@ export class SearchAlertsMessage extends Component {
     };
 
     let getAdditionalTextFormatted = () => {
-      return _.map(populateMessageArguments.text, (text) => {
+      return _.map(populateMessageArguments.text, text => {
         text = this.formatMessageArgumentsText(text);
         return `${htmlFormatted ? '<li>' : '('}${text}${htmlFormatted ? '</li>' : ')'}`;
       }).join(' ');
@@ -82,7 +81,7 @@ export class SearchAlertsMessage extends Component {
     $$(this.root).trigger(SearchAlertsEvents.searchAlertsPopulateMessage, populateMessageArguments);
     let additionalMessage = `${htmlFormatted ? '<ul>' : ''}${getAdditionalTextFormatted()}${htmlFormatted ? '</ul>' : ''}`;
 
-    let automaticallyBuiltMessage;
+    let automaticallyBuiltMessage: string;
 
     if (query && populateMessageArguments.text.length != 0) {
       automaticallyBuiltMessage = `${_.escape(query)} ${additionalMessage}`;
@@ -110,23 +109,32 @@ export class SearchAlertsMessage extends Component {
    * @param error Specifies whether the message is an error message.
    */
   public showMessage(dom: Dom, message: string, error: boolean) {
-    this.message = $$('div');
+    this.message = $$('div', {
+      className: 'coveo-subscriptions-messages'
+    });
     this.message.el.innerHTML = `
       <div class='coveo-subscriptions-messages-message'>
-        <div class='coveo-subscriptions-messages-info-close'></div>
-        <div class='coveo-subscriptions-messages-content'>${message}</div>
+        <div class='coveo-subscriptions-messages-content'><span>${message}</span></div>
+        <div class='coveo-subscriptions-messages-info-close'>${SVGIcons.icons.checkboxHookExclusionMore}</div>
       </div>`;
 
     this.message.toggleClass('coveo-subscriptions-messages-error', error);
     let closeButton = this.message.find('.coveo-subscriptions-messages-info-close');
+    SVGDom.addClassToSVGInContainer(closeButton, 'coveo-subscript-messages-info-close-svg');
     $$(closeButton).on('click', () => this.close());
 
-    PopupUtils.positionPopup(this.message.el, dom.el, this.root, {
-      horizontal: HorizontalAlignment.INNERLEFT,
-      vertical: VerticalAlignment.BOTTOM,
-      verticalOffset: 12,
-      horizontalClip: true
-    }, this.root);
+    PopupUtils.positionPopup(
+      this.message.el,
+      dom.el,
+      this.root,
+      {
+        horizontal: PopupHorizontalAlignment.INNERLEFT,
+        vertical: PopupVerticalAlignment.BOTTOM,
+        verticalOffset: 12,
+        horizontalClip: true
+      },
+      this.root
+    );
 
     this.startCloseDelay();
 
@@ -156,8 +164,7 @@ export class SearchAlertsMessage extends Component {
         let typeConfig = <ISubscriptionQueryRequest>args.subscription.typeConfig;
         this.showMessage($$(args.dom), l('SubscriptionsMessageFollowQuery', this.getFollowQueryMessage(typeConfig.query.q, true)), false);
       } else {
-        let typeConfig = <ISubscriptionItemRequest>args.subscription.typeConfig;
-        this.showMessage($$(args.dom), l('SubscriptionsMessageFollow', _.escape(typeConfig.title)), false);
+        this.showMessage($$(args.dom), l('SubscriptionsMessageFollow'), false);
       }
     }
   }

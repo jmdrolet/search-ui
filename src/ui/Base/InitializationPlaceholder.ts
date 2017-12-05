@@ -13,6 +13,7 @@ export interface InitializationPlaceholderOption {
   searchbox?: boolean;
   resultList?: boolean;
   layout?: string;
+  waitingForFirstQueryMode?: boolean;
 }
 
 export class InitializationPlaceholder {
@@ -95,44 +96,74 @@ export class InitializationPlaceholder {
 </div>
 `;
 
+  public recommendationResultListPlaceholder = `<div class="coveo-result-frame coveo-placeholder-result">
+  <div class="coveo-result-row">
+    <div class="coveo-result-cell" style="width: 32px; vertical-align: middle;">
+        <div class="coveo-placeholder-icon-small"></div>
+      </div>
+    <div class="coveo-result-cell" style="padding-left:10px; vertical-align: middle;">
+      <div class="coveo-result-row">
+        <div class="coveo-result-cell">
+          <div class="coveo-placeholder-title" style="width: 90%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  `;
+
   public static NUMBER_OF_FACETS = 3;
   public static NUMBER_OF_RESULTS = 10;
+  public static NUMBER_OF_RESULTS_RECOMMENDATION = 5;
   public static INITIALIZATION_CLASS = 'coveo-during-initialization';
 
-  constructor(public root: HTMLElement, public options: InitializationPlaceholderOption = {
-    facet: true,
-    searchbox: true,
-    resultList: true,
-    searchInterface: true
-  }) {
-    if (options.searchInterface) {
-      $$(this.root).addClass(InitializationPlaceholder.INITIALIZATION_CLASS);
-    }
-    if (options.facet) {
-      this.createPlaceholderForFacets();
-    }
-    if (options.searchbox) {
-      this.createPlaceholderSearchbox();
-    }
-    if (options.resultList) {
-      this.createPlaceholderForResultList();
-    }
-    if (options.searchbox) {
-      $$(this.root).one(InitializationEvents.afterComponentsInitialization, () => {
-        $$(this.root).removeClass(InitializationPlaceholder.INITIALIZATION_CLASS);
-      });
-    }
+  private eventToRemovePlaceholder = InitializationEvents.afterComponentsInitialization;
 
+  constructor(public root: HTMLElement) {}
+
+  public withEventToRemovePlaceholder(event: string) {
+    this.eventToRemovePlaceholder = event;
+    return this;
   }
-  private createPlaceholderForFacets() {
+
+  public withFullInitializationStyling() {
+    $$(this.root).addClass(InitializationPlaceholder.INITIALIZATION_CLASS);
+    $$(this.root).one(this.eventToRemovePlaceholder, () => {
+      $$(this.root).removeClass(InitializationPlaceholder.INITIALIZATION_CLASS);
+    });
+    return this;
+  }
+
+  public withHiddenRootElement() {
+    $$(this.root).addClass('coveo-hidden');
+    return this;
+  }
+
+  public withVisibleRootElement() {
+    $$(this.root).removeClass('coveo-hidden');
+    return this;
+  }
+
+  public withWaitingForFirstQueryMode() {
+    $$(this.root).addClass('coveo-waiting-for-query');
+    $$(this.root).one(QueryEvents.duringQuery, () => {
+      $$(this.root).removeClass('coveo-waiting-for-query');
+    });
+
+    return this;
+  }
+
+  public withAllPlaceholders() {
+    this.withPlaceholderForFacets();
+    this.withPlaceholderForResultList();
+    this.withPlaceholderSearchbox();
+    return this;
+  }
+
+  public withPlaceholderForFacets() {
     // Render an arbitrary number of placeholder facet.
     // Facets should become usable on the first deferredQuerySuccess
 
-    let facetElements = $$(this.root).findAll('.CoveoFacet');
-    facetElements = facetElements.concat($$(this.root).findAll('.CoveoFacetRange'));
-    facetElements = facetElements.concat($$(this.root).findAll('.CoveoFacetSlider'));
-    facetElements = facetElements.concat($$(this.root).findAll('.CoveoHierarchicalFacet'));
-
+    const facetElements = this.getAllFacetsElements();
     if (Utils.isNonEmptyArray(facetElements)) {
       const placeholders: Dom[] = [];
       _.each(facetElements, (facetElement: HTMLElement) => $$(facetElement).addClass(InitializationPlaceholder.INITIALIZATION_CLASS));
@@ -143,30 +174,39 @@ export class InitializationPlaceholder {
         placeholders.push(placeHolder);
       });
 
-      $$(this.root).one(QueryEvents.deferredQuerySuccess, () => {
-        _.each(placeholders, (placeholder: Dom) => placeholder.remove());
-        _.each(facetElements, (facetElement: HTMLElement) => $$(facetElement).removeClass(InitializationPlaceholder.INITIALIZATION_CLASS));
-        _.each(facetElements, (facetElement: HTMLElement) => $$(facetElement).removeClass('coveo-with-placeholder'));
+      $$(this.root).one(this.eventToRemovePlaceholder, () => {
+        const toExecuteAfterInitialization = () => {
+          _.each(placeholders, (placeholder: Dom) => placeholder.remove());
+          _.each(facetElements, (facetElement: HTMLElement) =>
+            $$(facetElement).removeClass(InitializationPlaceholder.INITIALIZATION_CLASS)
+          );
+          _.each(facetElements, (facetElement: HTMLElement) => $$(facetElement).removeClass('coveo-with-placeholder'));
+        };
+        $$(this.root).one(QueryEvents.queryError, () => toExecuteAfterInitialization());
+        $$(this.root).one(QueryEvents.deferredQuerySuccess, () => toExecuteAfterInitialization());
       });
     }
+    return this;
   }
 
-  private createPlaceholderSearchbox() {
+  public withPlaceholderSearchbox() {
     // Searchbox should be good/usable afterComponentsInitialization
     // Create a placeholder until we reach that event.
 
     const searchBoxElements = $$(this.root).findAll('.CoveoSearchbox');
     if (Utils.isNonEmptyArray(searchBoxElements)) {
-      _.each(searchBoxElements, (el) => {
+      _.each(searchBoxElements, el => {
         $$(el).addClass(InitializationPlaceholder.INITIALIZATION_CLASS);
       });
-      $$(this.root).one(InitializationEvents.afterComponentsInitialization, () => {
+      $$(this.root).one(this.eventToRemovePlaceholder, () => {
         _.each(searchBoxElements, (el: HTMLElement) => $$(el).removeClass(InitializationPlaceholder.INITIALIZATION_CLASS));
       });
     }
+
+    return this;
   }
 
-  private createPlaceholderForResultList() {
+  public withPlaceholderForResultList() {
     // Render an arbitrary number of placeholder in the first result list we find
     // When we get the first newResultDisplayedEvent, the result list should be usable.
 
@@ -178,24 +218,32 @@ export class InitializationPlaceholder {
       $$(resultListToUse).append(rootToUse);
       $$(resultListToUse).addClass('coveo-with-placeholder');
 
-      _.times(InitializationPlaceholder.NUMBER_OF_RESULTS, () => {
-        rootToUse.innerHTML += placeholderToUse;
-      });
-      $$(this.root).one(ResultListEvents.newResultDisplayed, () => {
+      _.times(
+        this.isRecommendationRoot()
+          ? InitializationPlaceholder.NUMBER_OF_RESULTS_RECOMMENDATION
+          : InitializationPlaceholder.NUMBER_OF_RESULTS,
+        () => {
+          rootToUse.innerHTML += placeholderToUse;
+        }
+      );
+      const reset = () => {
         $$(rootToUse).remove();
         _.each(resultListsElements, el => $$(el).removeClass(InitializationPlaceholder.INITIALIZATION_CLASS));
         $$(resultListToUse).removeClass('coveo-with-placeholder');
-      });
+      };
+      $$(this.root).one(ResultListEvents.newResultDisplayed, () => reset());
+      $$(this.root).one(QueryEvents.queryError, () => reset());
+      $$(this.root).one(QueryEvents.noResults, () => reset());
     }
+
+    return this;
   }
 
   private determineResultListPlaceholder(resultListElements: HTMLElement[]) {
     let currentLayout;
-    if (this.options.layout) {
-      currentLayout = this.options.layout;
-    } else if (resultListElements.length > 1) {
+    if (resultListElements.length > 1) {
       currentLayout = HashUtils.getValue('layout', HashUtils.getHash());
-    } else {
+    } else if (resultListElements.length == 1) {
       currentLayout = resultListElements[0].getAttribute('data-layout');
     }
 
@@ -218,23 +266,29 @@ export class InitializationPlaceholder {
         resultListElement = _.first(resultListElements);
       }
       return {
-        placeholderToUse: this.determinerResultListFromLayout(currentLayout),
+        placeholderToUse: this.determineResultListFromLayout(currentLayout),
         resultListToUse: resultListElement,
         rootToUse: this.determineRootFromLayout(currentLayout)
       };
-    } else {
+    } else if (resultListElements.length == 1) {
       return {
-        placeholderToUse: this.determinerResultListFromLayout(currentLayout),
+        placeholderToUse: this.determineResultListFromLayout(currentLayout),
         resultListToUse: resultListElements[0],
         rootToUse: this.determineRootFromLayout(currentLayout)
       };
+    } else {
+      return null;
     }
   }
 
-  private determinerResultListFromLayout(layout: string) {
+  private determineResultListFromLayout(layout: string) {
     switch (layout) {
       case 'list':
-        return this.resultListPlaceholder;
+        if (this.isRecommendationRoot()) {
+          return this.recommendationResultListPlaceholder;
+        } else {
+          return this.resultListPlaceholder;
+        }
       case 'card':
         return this.cardResultListPlaceholder;
       default:
@@ -252,5 +306,16 @@ export class InitializationPlaceholder {
         return $$('div').el;
     }
   }
-}
 
+  private isRecommendationRoot(): boolean {
+    return $$(this.root).hasClass('CoveoRecommendation');
+  }
+
+  private getAllFacetsElements(): HTMLElement[] {
+    let facetElements = $$(this.root).findAll('.CoveoFacet');
+    facetElements = facetElements.concat($$(this.root).findAll('.CoveoFacetRange'));
+    facetElements = facetElements.concat($$(this.root).findAll('.CoveoFacetSlider'));
+    facetElements = facetElements.concat($$(this.root).findAll('.CoveoHierarchicalFacet'));
+    return facetElements;
+  }
+}

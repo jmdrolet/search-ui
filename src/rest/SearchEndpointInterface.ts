@@ -68,13 +68,14 @@ export interface IEndpointCallOptions {
 }
 
 /**
- * Available options when calling against the {@link SearchEndpoint} to get a document
+ * The `IGetDocumentOptions` interface describes the available options when calling against a
+ * [`SearchEndpoint`]{@link SearchEndpoint} to get an item.
  */
-export interface IGetDocumentOptions extends IEndpointCallOptions {
-}
+export interface IGetDocumentOptions extends IEndpointCallOptions {}
 
 /**
- * Available options when calling against the {@link SearchEndpoint} to view a document as an HTMLElement (quickview basically...)
+ * The `IViewAsHtmlOptions` interface describes the available options when calling against a
+ * [`SearchEndpoint`]{@link SearchEndpoint} to view an item as an HTMLElement (think: quickview).
  */
 export interface IViewAsHtmlOptions extends IEndpointCallOptions {
   query?: string;
@@ -104,7 +105,7 @@ export interface ISearchEndpoint {
   getQuerySuggest(request: IQuerySuggestRequest, callOptions?: IEndpointCallOptions): Promise<IQuerySuggestResponse>;
   rateDocument(ratingRequest: IRatingRequest, callOptions?: IEndpointCallOptions): Promise<boolean>;
   follow(request: ISubscriptionRequest): Promise<ISubscription>;
-  listSubscriptions(page?: number): Promise<ISubscription[]>;
+  listSubscriptions(page?: number, callOptions?: IEndpointCallOptions): Promise<ISubscription[]>;
   updateSubscription(subscription: ISubscription): Promise<ISubscription>;
   deleteSubscription(subscription: ISubscription): Promise<ISubscription>;
   logError(sentryLog: ISentryLog): Promise<boolean>;

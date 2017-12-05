@@ -1,10 +1,6 @@
 import { Initialization } from './Initialization';
 import * as _ from 'underscore';
 
-interface IWindow {
-  $: any;
-}
-
 export interface IJQuery {
   fn: any;
 }
@@ -33,7 +29,7 @@ export function initCoveoJQuery() {
     window['Coveo']['$'] = jQueryInstance;
   }
 
-  jQueryInstance.fn.coveo = function (...args: any[]) {
+  jQueryInstance.fn.coveo = function(...args: any[]) {
     var returnValue: any;
     this.each((index: number, element: HTMLElement) => {
       var returnValueForThisElement: any;

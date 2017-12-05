@@ -12,7 +12,6 @@ import { IGroupByResult } from '../../rest/GroupByResult';
 import { Initialization } from '../Base/Initialization';
 import * as Globalize from 'globalize';
 import { exportGlobally } from '../../GlobalExports';
-import { IStringMap } from '../../rest/GenericParam';
 
 export interface IFacetRangeOptions extends IFacetOptions {
   ranges?: IRangeValue[];
@@ -49,6 +48,8 @@ export interface IFacetRangeOptions extends IFacetOptions {
  *  Moreover, while the [numberOfValues]{@link Facet.options.numberOfValues} option still allows you to specify the
  *  maximum number of values to display in a FacetRange component, it is not possible for the end to display additional
  *  values, since the component does not support the **More** button.
+ *
+ *  @notSupportedIn salesforcefree
  */
 export class FacetRange extends Facet implements IComponentBindings {
   static ID = 'FacetRange';
@@ -56,16 +57,15 @@ export class FacetRange extends Facet implements IComponentBindings {
 
   static doExport = () => {
     exportGlobally({
-      'FacetRange': FacetRange
+      FacetRange: FacetRange
     });
-  }
+  };
 
   /**
    * The options for the component
    * @componentOptions
    */
   static options: IFacetRangeOptions = {
-
     /**
      * Specifies whether the field for which you require ranges is a date field.
      *
@@ -78,11 +78,10 @@ export class FacetRange extends Facet implements IComponentBindings {
     /**
      * Specifies an array of {@link IRangeValue} to use as Facet values.
      *
-     * It is only possible to specify a value for this option in the {@link init} call of your search interface. You
-     * cannot set it directly as an HTML attribute.
      *
-     * **Example:**
+     * **Examples:**
      *
+     * You can set the option in the ['init']{@link init} call:
      * ```javascript
      * var myRanges = [
      *   {
@@ -112,6 +111,12 @@ export class FacetRange extends Facet implements IComponentBindings {
      * })
      * ```
      *
+     * Or directly in the markup:
+     * ```html
+     * <!-- Ensure that the double quotes are properly handled in data-ranges. -->
+     * <div class='CoveoFacetRange' data-field='@myotherfield' data-ranges='[{"start": 0, "end": 100, "label": "0 - 100", "endInclusive": false}, {"start": 100, "end": 200, "label": "100 - 200", "endInclusive": false}]'></div>
+     * ```
+     *
      * **Note:**
      * > Ranges can overlap.
      *
@@ -120,9 +125,7 @@ export class FacetRange extends Facet implements IComponentBindings {
      * function (see [Query Function](https://developers.coveo.com/x/XQCq)). When this is the case, you must specify the
      * ranges at query time.
      */
-    ranges: ComponentOptions.buildCustomOption<IRangeValue[]>(() => {
-      return null;
-    }),
+    ranges: ComponentOptions.buildJsonOption<IRangeValue[]>()
   };
 
   public options: IFacetRangeOptions;
@@ -156,8 +159,12 @@ export class FacetRange extends Facet implements IComponentBindings {
         if (helper != null) {
           ret = helper.call(this, startEnd[1]) + ' - ' + helper.call(this, startEnd[2]);
         } else {
-          const start = startEnd[1].match(/^[\+\-]?[0-9]+(\.[0-9]+)?$/) ? <any>Number(startEnd[1]) : <any>DateUtils.convertFromJsonDateIfNeeded(startEnd[1]);
-          const end = startEnd[2].match(/^[\+\-]?[0-9]+(\.[0-9]+)?$/) ? <any>Number(startEnd[2]) : <any>DateUtils.convertFromJsonDateIfNeeded(startEnd[2]);
+          const start = startEnd[1].match(/^[\+\-]?[0-9]+(\.[0-9]+)?$/)
+            ? <any>Number(startEnd[1])
+            : <any>DateUtils.convertFromJsonDateIfNeeded(startEnd[1]);
+          const end = startEnd[2].match(/^[\+\-]?[0-9]+(\.[0-9]+)?$/)
+            ? <any>Number(startEnd[2])
+            : <any>DateUtils.convertFromJsonDateIfNeeded(startEnd[2]);
           ret = Globalize.format(start, this.options.valueCaption) + ' - ' + Globalize.format(end, this.options.valueCaption);
         }
       }

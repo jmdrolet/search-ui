@@ -18,8 +18,8 @@ export class FileTypes {
     var objecttype = <string>Utils.getFieldValue(result, 'objecttype');
     var filetype = <string>Utils.getFieldValue(result, 'filetype');
 
-    // When @objecttype is File we fallback on @filetype for icons and such
-    if (Utils.isNonEmptyString(objecttype) && objecttype.toLowerCase() != 'file') {
+    // When @objecttype is File, Document, or ContentVersion we fallback on @filetype for icons and such
+    if (Utils.isNonEmptyString(objecttype) && !objecttype.match(/^(file|document|contentversion)$/i)) {
       return FileTypes.getObjectType(objecttype);
     } else if (Utils.isNonEmptyString(filetype)) {
       return FileTypes.getFileType(filetype);
@@ -35,36 +35,44 @@ export class FileTypes {
   static getObjectType(objecttype: string): IFileTypeInfo {
     // We must use lowercase filetypes because that's how the CSS classes
     // are generated (they are case sensitive, alas).
-    objecttype = objecttype.toLowerCase();
+    const loweredCaseObjecttype = objecttype.toLowerCase();
 
-    const variableValue = `objecttype_${objecttype}`;
+    const variableValue = `objecttype_${loweredCaseObjecttype}`;
     // Most object types have a set of localized strings in the main dictionary
-    var localizedString = l(variableValue);
-
+    let localizedString = l(variableValue);
+    // Some strings are sent as `objecttype_[...]` to specify a dictionary to use. If there's no match, try using
+    // the main dictionary by using the original value.
+    if (localizedString.toLowerCase() == variableValue.toLowerCase()) {
+      localizedString = l(objecttype);
+    }
     return {
-      'icon': 'coveo-icon objecttype ' + objecttype.replace(' ', '-'),
-      caption: localizedString != variableValue ? localizedString : objecttype
+      icon: 'coveo-icon objecttype ' + loweredCaseObjecttype.replace(' ', '-'),
+      caption: localizedString
     };
   }
 
   static getFileType(filetype: string): IFileTypeInfo {
     // We must use lowercase filetypes because that's how the CSS classes
     // are generated (they are case sensitive, alas).
-    filetype = filetype.toLowerCase();
+    let loweredCaseFiletype = filetype.toLowerCase();
 
     // Sometimes, filetype begins with a period (typically means the index has
     // no idea and uses the file extension as a filetype).
-    if (filetype[0] == '.') {
-      filetype = filetype.substring(1);
+    if (loweredCaseFiletype[0] == '.') {
+      loweredCaseFiletype = loweredCaseFiletype.substring(1);
     }
 
-    const variableValue = `filetype_${filetype}`;
+    const variableValue = `filetype_${loweredCaseFiletype}`;
     // Most filetypes have a set of localized strings in the main dictionary
     let localizedString = l(variableValue);
-
+    if (localizedString.toLowerCase() == variableValue.toLowerCase()) {
+      // Some strings are sent as `filetype_[...]` to specify a dictionary to use. If there's no match, try using
+      // The main dictionary by using the original value.
+      localizedString = l(filetype);
+    }
     return {
-      'icon': 'coveo-icon filetype ' + filetype.replace(' ', '-'),
-      caption: localizedString != variableValue ? localizedString : filetype
+      icon: 'coveo-icon filetype ' + loweredCaseFiletype.replace(' ', '-'),
+      caption: localizedString
     };
   }
 
@@ -73,7 +81,7 @@ export class FileTypes {
       fileTypeCaptions = {};
       var strings = String['locales'][String['locale'].toLowerCase()];
       Assert.isNotUndefined(strings);
-      _.each(_.keys(strings), function (key) {
+      _.each(_.keys(strings), function(key) {
         if (key.indexOf('filetype_') == 0) {
           fileTypeCaptions[key.substr('filetype_'.length)] = key.toLocaleString();
         } else if (key.indexOf('objecttype_') == 0) {

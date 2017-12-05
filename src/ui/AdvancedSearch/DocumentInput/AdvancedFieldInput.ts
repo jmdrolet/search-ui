@@ -1,17 +1,16 @@
-import { Dropdown } from '../Form/Dropdown';
-import { TextInput } from '../Form/TextInput';
+import { Dropdown } from '../../FormWidgets/Dropdown';
+import { TextInput } from '../../FormWidgets/TextInput';
 import { $$ } from '../../../utils/Dom';
 import { DocumentInput } from './DocumentInput';
 import { QueryBuilder } from '../../Base/QueryBuilder';
 
 export class AdvancedFieldInput extends DocumentInput {
-
   protected element: HTMLElement;
   public mode: Dropdown;
   public input: TextInput;
 
-  constructor(public inputName: string, public fieldName: string) {
-    super(inputName);
+  constructor(public inputName: string, public fieldName: string, public root: HTMLElement) {
+    super(inputName, root);
   }
 
   public reset() {
@@ -48,5 +47,4 @@ export class AdvancedFieldInput extends DocumentInput {
     }
     return '';
   }
-
 }

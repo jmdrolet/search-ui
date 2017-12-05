@@ -7,7 +7,6 @@ import { ResponsiveFacets } from '../../../src/ui/ResponsiveComponents/Responsiv
 import { $$, Dom } from '../../../src/utils/Dom';
 import { Facet } from '../../../src/ui/Facet/Facet';
 import { FacetSearch } from '../../../src/ui/Facet/FacetSearch';
-import { FacetSlider } from '../../../src/ui/FacetSlider/FacetSlider';
 import { FacetSearchValuesList } from '../../../src/ui/Facet/FacetSearchValuesList';
 import * as Mock from '../../MockEnvironment';
 import { QueryEvents } from '../../../src/events/QueryEvents';
@@ -52,8 +51,20 @@ export function ResponsiveFacetsTest() {
       root = $$('div');
       root.append($$('div', { className: 'coveo-facet-column' }).el);
       root.append($$('div', { className: ResponsiveComponentsManager.DROPDOWN_HEADER_WRAPPER_CSS_CLASS }).el);
-      responsiveDropdown = jasmine.createSpyObj('responsiveDropdown', ['registerOnOpenHandler', 'registerOnCloseHandler', 'cleanUp', 'open', 'close', 'disablePopupBackground']);
-      responsiveDropdownContent = jasmine.createSpyObj('responsiveDropdownContent', ['positionDropdown', 'hideDropdown', 'cleanUp', 'element']);
+      responsiveDropdown = jasmine.createSpyObj('responsiveDropdown', [
+        'registerOnOpenHandler',
+        'registerOnCloseHandler',
+        'cleanUp',
+        'open',
+        'close',
+        'disablePopupBackground'
+      ]);
+      responsiveDropdownContent = jasmine.createSpyObj('responsiveDropdownContent', [
+        'positionDropdown',
+        'hideDropdown',
+        'cleanUp',
+        'element'
+      ]);
       responsiveDropdownContent.element = $$('div');
       responsiveDropdownHeader = jasmine.createSpyObj('responsiveDropdownHeader', ['open', 'close', 'cleanUp', 'show', 'hide']);
       responsiveDropdownHeader.element = $$('div', { className: dropdownHeaderClassName });
@@ -64,7 +75,7 @@ export function ResponsiveFacetsTest() {
       registerFacet();
     });
 
-    it('when a facet is registered then position search results is called on scroll', (done) => {
+    it('when a facet is registered then position search results is called on scroll', done => {
       spyOn(facet.facetSearch, 'positionSearchResults');
 
       $$(responsiveDropdownContent.element).trigger('scroll');
@@ -117,6 +128,7 @@ export function ResponsiveFacetsTest() {
       });
 
       it('should hide on query error', () => {
+        facet.createDom();
         root.trigger(QueryEvents.queryError);
         expect(responsiveDropdownHeader.hide).toHaveBeenCalled();
       });

@@ -3,21 +3,30 @@ import { ComponentOptions } from '../Base/ComponentOptions';
 import { ComponentOptionsModel } from '../../models/ComponentOptionsModel';
 import { IComponentBindings } from '../Base/ComponentBindings';
 import { LocalStorageUtils } from '../../utils/LocalStorageUtils';
-import { PreferencesPanelCheckboxInput } from '../PreferencesPanel/PreferencesPanelItem';
 import { PreferencesPanelEvents } from '../../events/PreferencesPanelEvents';
 import { analyticsActionCauseList, IAnalyticsPreferencesChangeMeta } from '../Analytics/AnalyticsActionListMeta';
 import { Initialization } from '../Base/Initialization';
-import { IResultLinkOptions } from '../ResultLink/ResultLinkOptions';
 import { Assert } from '../../misc/Assert';
 import { l } from '../../strings/Strings';
 import { $$ } from '../../utils/Dom';
 import * as _ from 'underscore';
 import { exportGlobally } from '../../GlobalExports';
 import { Defer } from '../../misc/Defer';
+import { Checkbox } from '../FormWidgets/Checkbox';
+import { RadioButton } from '../FormWidgets/RadioButton';
+import { FormGroup } from '../FormWidgets/FormGroup';
+import { IFormWidgetSelectable } from '../FormWidgets/FormWidgets';
 
 export interface IResultsPreferencesOptions {
   enableOpenInOutlook?: boolean;
   enableOpenInNewWindow?: boolean;
+  enableQuerySyntax?: boolean;
+}
+
+export interface IPossiblePreferences {
+  openInOutlook?: boolean;
+  alwaysOpenInNewWindow?: boolean;
+  enableQuerySyntax?: boolean;
 }
 
 /**
@@ -34,16 +43,15 @@ export class ResultsPreferences extends Component {
 
   static doExport = () => {
     exportGlobally({
-      'ResultsPreferences': ResultsPreferences
+      ResultsPreferences: ResultsPreferences
     });
-  }
+  };
 
   /**
    * The options for the component
    * @componentOptions
    */
   static options: IResultsPreferencesOptions = {
-
     /**
      * Specifies whether to make the option to open results in Microsoft Outlook available.
      *
@@ -55,13 +63,29 @@ export class ResultsPreferences extends Component {
      *
      * Default value is `true`
      */
-    enableOpenInNewWindow: ComponentOptions.buildBooleanOption({ defaultValue: true })
+    enableOpenInNewWindow: ComponentOptions.buildBooleanOption({ defaultValue: true }),
+    /**
+     * Specifies whether to make the option to allow end users to turn query syntax on or off available.
+     *
+     * If query syntax is enabled, the Coveo Platform tries to interpret special query syntax (e.g.,
+     * `@objecttype=message`) when the end user types a query in the [`Querybox`]{@link Querybox} (see
+     * [Coveo Query Syntax Reference](http://www.coveo.com/go?dest=adminhelp70&lcid=9&context=10005)). Enabling query
+     * syntax also causes the `Querybox` to highlight any query syntax.
+     *
+     * Selecting **On** for the **Enable query syntax** setting enables query syntax, whereas selecting **Off** disables
+     * it. Selecting **Automatic** uses the `Querybox` [`enableQuerySyntax`]{@link Querybox.options.enableQuerySyntax}
+     * option value (which is `false` by default).
+     *
+     * Default value is `false`
+     */
+    enableQuerySyntax: ComponentOptions.buildBooleanOption({ defaultValue: false })
   };
 
-  public preferences: IResultLinkOptions;
-  private preferencePanelLocalStorage: LocalStorageUtils<IResultLinkOptions>;
+  public preferences: IPossiblePreferences;
+  private preferencePanelLocalStorage: LocalStorageUtils<IPossiblePreferences>;
   private preferencesPanel: HTMLElement;
-  private preferencePanelCheckboxInput: PreferencesPanelCheckboxInput;
+  private preferencePanelCheckboxInputs: { [label: string]: Checkbox } = {};
+  private preferencePanelRadioInputs: { [label: string]: RadioButton } = {};
 
   /**
    * Creates a new ResultsPreference component.
@@ -84,22 +108,21 @@ export class ResultsPreferences extends Component {
     this.preferences = this.preferencePanelLocalStorage.load() || {};
     this.adjustPreferencesToComponentConfig();
 
-    ComponentOptions.initComponentOptions(this.element, ResultsPreferences, this.preferences);
+    ComponentOptions.initComponentOptions(this.element, ResultsPreferences, this.options);
 
     this.updateComponentOptionsModel();
 
     this.bind.on(this.preferencesPanel, PreferencesPanelEvents.savePreferences, () => this.save());
     this.bind.on(this.preferencesPanel, PreferencesPanelEvents.exitPreferencesWithoutSave, () => this.exitWithoutSave());
-
-    this.buildTitle();
     this.buildCheckboxesInput();
+    this.buildRadiosInput();
   }
 
   /**
    * Saves the current state of the ResultsPreferences component in the local storage.
    */
   public save() {
-    this.fromCheckboxInputToPreferences();
+    this.fromInputToPreferences();
     this.logger.info('Saving preferences', this.preferences);
     this.preferencePanelLocalStorage.save(this.preferences);
     this.updateComponentOptionsModel();
@@ -110,72 +133,135 @@ export class ResultsPreferences extends Component {
   }
 
   private updateComponentOptionsModel() {
-    this.componentOptionsModel.set(ComponentOptionsModel.attributesEnum.resultLink, this.preferences);
+    const resultLinkOption = _.pick(this.preferences, 'openInOutlook', 'alwaysOpenInNewWindow');
+    const searchBoxOption = _.pick(this.preferences, 'enableQuerySyntax');
+    this.componentOptionsModel.set(ComponentOptionsModel.attributesEnum.resultLink, resultLinkOption);
+    this.componentOptionsModel.set(ComponentOptionsModel.attributesEnum.searchBox, searchBoxOption);
   }
 
-  private buildTitle() {
-    var title = $$('div', {
-      className: 'coveo-title'
-    }, l('LinkOpeningSettings'));
+  private buildRadiosInput() {
+    if (this.options.enableQuerySyntax) {
+      const createRadioButton = (label: string) => {
+        const radio = new RadioButton(
+          radioButtonInstance => {
+            this.fromPreferenceChangeEventToUsageAnalyticsLog(radioButtonInstance.isSelected() ? 'selected' : 'unselected', label);
+            this.save();
 
-    this.element.appendChild(title.el);
+            this.queryController.executeQuery({
+              closeModalBox: false
+            });
+          },
+          label,
+          'coveo-results-preferences-query-syntax'
+        );
+        return radio;
+      };
+
+      const translatedLabels = _.map(['On', 'Off', 'Automatic'], label => l(label));
+      const radios = _.map(translatedLabels, label => {
+        const radio = createRadioButton(label);
+        this.preferencePanelRadioInputs[label] = radio;
+        return radio;
+      });
+
+      const formGroup = new FormGroup(radios, l('EnableQuerySyntax'));
+      $$(this.element).append(formGroup.build());
+      this.fromPreferencesToRadioInput();
+    }
   }
 
   private buildCheckboxesInput() {
-    var inputs = [];
+    const createCheckbox = (label: string) => {
+      const checkbox = new Checkbox(checkboxInstance => {
+        this.fromPreferenceChangeEventToUsageAnalyticsLog(checkboxInstance.isSelected() ? 'selected' : 'unselected', label);
+        this.save();
+        this.queryController.executeQuery({
+          closeModalBox: false
+        });
+      }, label);
+      this.preferencePanelCheckboxInputs[label] = checkbox;
+      return checkbox;
+    };
+
+    const checkboxes: Checkbox[] = [];
+
     if (this.options.enableOpenInOutlook) {
-      inputs.push({ label: l('OpenInOutlookWhenPossible') });
+      checkboxes.push(createCheckbox(l('OpenInOutlookWhenPossible')));
     }
     if (this.options.enableOpenInNewWindow) {
-      inputs.push({ label: l('AlwaysOpenInNewWindow') });
+      checkboxes.push(createCheckbox(l('AlwaysOpenInNewWindow')));
     }
-    this.preferencePanelCheckboxInput = new PreferencesPanelCheckboxInput(inputs, ResultsPreferences.ID);
-    var container = $$('div', {
-      className: 'coveo-choices-container'
-    });
 
-    container.el.appendChild(this.preferencePanelCheckboxInput.build());
-    var executeOnChange = container.findAll('input');
-    _.each(executeOnChange, (toExec) => {
-      $$(toExec).on('change', (e: Event) => {
-        this.fromPreferenceChangeEventToUsageAnalyticsLog(e);
-        this.save();
-        this.queryController.executeQuery();
-      });
-    });
-
-    this.element.appendChild(container.el);
+    this.element.appendChild(new FormGroup(checkboxes, l('ResultLinks')).build());
     this.fromPreferencesToCheckboxInput();
   }
 
-  private fromCheckboxInputToPreferences() {
-    var selected = this.preferencePanelCheckboxInput.getSelecteds();
-    this.preferences = {
+  private fromInputToPreferences() {
+    this.preferences = this.preferences || {
       openInOutlook: false,
-      alwaysOpenInNewWindow: false
+      alwaysOpenInNewWindow: false,
+      enableQuerySyntax: undefined
     };
-    if (_.contains(selected, l('OpenInOutlookWhenPossible'))) {
-      this.preferences.openInOutlook = true;
-    }
-    if (_.contains(selected, l('AlwaysOpenInNewWindow'))) {
-      this.preferences.alwaysOpenInNewWindow = true;
-    }
+
+    _.each(this.preferencePanelCheckboxInputs, (checkbox: Checkbox, label: string) => {
+      if (label == l('OpenInOutlookWhenPossible')) {
+        if (this.isSelected(l('OpenInOutlookWhenPossible'), label, checkbox)) {
+          this.preferences.openInOutlook = true;
+        } else if (this.preferences.openInOutlook != null) {
+          this.preferences.openInOutlook = false;
+        }
+      }
+      if (label == l('AlwaysOpenInNewWindow')) {
+        if (this.isSelected(l('AlwaysOpenInNewWindow'), label, checkbox)) {
+          this.preferences.alwaysOpenInNewWindow = true;
+        } else if (this.preferences.alwaysOpenInNewWindow != null) {
+          this.preferences.alwaysOpenInNewWindow = false;
+        }
+      }
+    });
+
+    _.each(this.preferencePanelRadioInputs, (radio: RadioButton, label: string) => {
+      if (this.isSelected(l('On'), label, radio)) {
+        this.preferences.enableQuerySyntax = true;
+      }
+      if (this.isSelected(l('Off'), label, radio)) {
+        this.preferences.enableQuerySyntax = false;
+      }
+      if (this.isSelected(l('Automatic'), label, radio)) {
+        delete this.preferences.enableQuerySyntax;
+      }
+    });
   }
 
   private fromPreferencesToCheckboxInput() {
     if (this.preferences.openInOutlook) {
-      this.preferencePanelCheckboxInput.select(l('OpenInOutlookWhenPossible'));
+      this.preferencePanelCheckboxInputs[l('OpenInOutlookWhenPossible')].select(false);
     }
     if (this.preferences.alwaysOpenInNewWindow) {
-      this.preferencePanelCheckboxInput.select(l('AlwaysOpenInNewWindow'));
+      this.preferencePanelCheckboxInputs[l('AlwaysOpenInNewWindow')].select(false);
     }
   }
 
-  private fromPreferenceChangeEventToUsageAnalyticsLog(e: Event) {
-    var type = (<HTMLInputElement>e.target).checked ? 'selected' : 'unselected';
-    var preference = (<HTMLInputElement>e.target).value;
-    this.usageAnalytics.logCustomEvent<IAnalyticsPreferencesChangeMeta>(analyticsActionCauseList.preferencesChange, { preferenceName: preference, preferenceType: type }, this.element);
-    this.usageAnalytics.logSearchEvent<IAnalyticsPreferencesChangeMeta>(analyticsActionCauseList.preferencesChange, { preferenceName: preference, preferenceType: type });
+  private fromPreferencesToRadioInput() {
+    if (this.preferences.enableQuerySyntax === true) {
+      this.preferencePanelRadioInputs[l('On')].select(false);
+    } else if (this.preferences.enableQuerySyntax === false) {
+      this.preferencePanelRadioInputs[l('Off')].select(false);
+    } else {
+      this.preferencePanelRadioInputs[l('Automatic')].select(false);
+    }
+  }
+
+  private fromPreferenceChangeEventToUsageAnalyticsLog(type: 'selected' | 'unselected', preference: string) {
+    this.usageAnalytics.logCustomEvent<IAnalyticsPreferencesChangeMeta>(
+      analyticsActionCauseList.preferencesChange,
+      { preferenceName: preference, preferenceType: type },
+      this.element
+    );
+    this.usageAnalytics.logSearchEvent<IAnalyticsPreferencesChangeMeta>(analyticsActionCauseList.preferencesChange, {
+      preferenceName: preference,
+      preferenceType: type
+    });
   }
 
   private adjustPreferencesToComponentConfig() {
@@ -184,13 +270,18 @@ export class ResultsPreferences extends Component {
     // This can happen if an admin change the component configuration after end users have already selected a preferences.
     // We need to adapt the saved preferences to what's actually available in the component
     let needToSave = false;
-    if (this.preferences.alwaysOpenInNewWindow && !this.options.enableOpenInNewWindow) {
-      this.preferences.alwaysOpenInNewWindow = null;
+    if (!this.options.enableOpenInNewWindow) {
+      delete this.preferences.alwaysOpenInNewWindow;
       needToSave = true;
     }
 
-    if (this.preferences.openInOutlook && !this.options.enableOpenInOutlook) {
-      this.preferences.openInOutlook = null;
+    if (!this.options.enableOpenInOutlook) {
+      delete this.preferences.openInOutlook;
+      needToSave = true;
+    }
+
+    if (!this.options.enableQuerySyntax) {
+      delete this.preferences.enableQuerySyntax;
       needToSave = true;
     }
 
@@ -199,6 +290,10 @@ export class ResultsPreferences extends Component {
         this.save();
       });
     }
+  }
+
+  private isSelected(checkingFor: string, label: string, input: IFormWidgetSelectable) {
+    return checkingFor == label && input.isSelected();
   }
 }
 

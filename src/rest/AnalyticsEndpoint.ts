@@ -14,6 +14,7 @@ import { Cookie } from '../utils/CookieUtils';
 import { ISuccessResponse } from '../rest/EndpointCaller';
 import { IStringMap } from '../rest/GenericParam';
 import * as _ from 'underscore';
+import { Utils } from '../utils/Utils';
 
 export interface IAnalyticsEndpointOptions {
   token: string;
@@ -39,7 +40,7 @@ export class AnalyticsEndpoint {
     this.logger = new Logger(this);
 
     var endpointCallerOptions: IEndpointCallerOptions = {
-      accessToken: (this.options.token && this.options.token != '') ? this.options.token : null
+      accessToken: this.options.token && this.options.token != '' ? this.options.token : null
     };
     this.endpointCaller = new EndpointCaller(endpointCallerOptions);
     this.organization = options.organization;
@@ -92,32 +93,38 @@ export class AnalyticsEndpoint {
   }
 
   private sendToService<D, R>(data: D, path: string, paramName: string): Promise<R> {
-    var url = QueryUtils.mergePath(this.options.serviceUrl, '/rest/' + (AnalyticsEndpoint.CUSTOM_ANALYTICS_VERSION || AnalyticsEndpoint.DEFAULT_ANALYTICS_VERSION) + '/analytics/' + path);
+    var url = QueryUtils.mergePath(
+      this.options.serviceUrl,
+      '/rest/' + (AnalyticsEndpoint.CUSTOM_ANALYTICS_VERSION || AnalyticsEndpoint.DEFAULT_ANALYTICS_VERSION) + '/analytics/' + path
+    );
     var queryString = [];
 
     if (this.organization) {
       queryString.push('org=' + this.organization);
     }
     if (Cookie.get('visitorId')) {
-      queryString.push('visitor=' + encodeURIComponent(Cookie.get('visitorId')));
+      queryString.push('visitor=' + Utils.safeEncodeURIComponent(Cookie.get('visitorId')));
     }
 
     // We use pendingRequest because we don't want to have 2 request to analytics at the same time.
     // Otherwise the cookie visitId won't be set correctly.
     if (AnalyticsEndpoint.pendingRequest == null) {
-      AnalyticsEndpoint.pendingRequest = this.endpointCaller.call<R>({
-        errorsAsSuccess: false,
-        method: 'POST',
-        queryString: queryString,
-        requestData: data,
-        url: url,
-        responseType: 'text',
-        requestDataType: 'application/json'
-      }).then((res: ISuccessResponse<R>) => {
-        return this.handleAnalyticsEventResponse(<any>res.data);
-      }).finally(() => {
-        AnalyticsEndpoint.pendingRequest = null;
-      });
+      AnalyticsEndpoint.pendingRequest = this.endpointCaller
+        .call<R>({
+          errorsAsSuccess: false,
+          method: 'POST',
+          queryString: queryString,
+          requestData: data,
+          url: url,
+          responseType: 'text',
+          requestDataType: 'application/json'
+        })
+        .then((res: ISuccessResponse<R>) => {
+          return this.handleAnalyticsEventResponse(<any>res.data);
+        })
+        .finally(() => {
+          AnalyticsEndpoint.pendingRequest = null;
+        });
       return AnalyticsEndpoint.pendingRequest;
     } else {
       return AnalyticsEndpoint.pendingRequest.finally(() => {
@@ -127,17 +134,19 @@ export class AnalyticsEndpoint {
   }
 
   private getFromService<T>(url: string, params: IStringMap<string>): Promise<T> {
-    var paramsToSend = (this.options.token && this.options.token != '') ? _.extend({ 'access_token': this.options.token }, params) : params;
-    return this.endpointCaller.call<T>({
-      errorsAsSuccess: false,
-      method: 'GET',
-      queryString: this.options.organization ? ['org=' + encodeURIComponent(this.options.organization)] : [],
-      requestData: paramsToSend,
-      responseType: 'json',
-      url: url
-    }).then((res: ISuccessResponse<T>) => {
-      return res.data;
-    });
+    var paramsToSend = this.options.token && this.options.token != '' ? _.extend({ access_token: this.options.token }, params) : params;
+    return this.endpointCaller
+      .call<T>({
+        errorsAsSuccess: false,
+        method: 'GET',
+        queryString: this.options.organization ? ['org=' + Utils.safeEncodeURIComponent(this.options.organization)] : [],
+        requestData: paramsToSend,
+        responseType: 'json',
+        url: url
+      })
+      .then((res: ISuccessResponse<T>) => {
+        return res.data;
+      });
   }
 
   private handleAnalyticsEventResponse(response: IAPIAnalyticsEventResponse | IAPIAnalyticsSearchEventsResponse) {
@@ -162,8 +171,12 @@ export class AnalyticsEndpoint {
     return response;
   }
 
-
   private buildAnalyticsUrl(path: string) {
-    return this.options.serviceUrl + '/rest/' + (AnalyticsEndpoint.CUSTOM_ANALYTICS_VERSION || AnalyticsEndpoint.DEFAULT_ANALYTICS_VERSION) + path;
+    return (
+      this.options.serviceUrl +
+      '/rest/' +
+      (AnalyticsEndpoint.CUSTOM_ANALYTICS_VERSION || AnalyticsEndpoint.DEFAULT_ANALYTICS_VERSION) +
+      path
+    );
   }
 }

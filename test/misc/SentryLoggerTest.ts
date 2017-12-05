@@ -5,7 +5,6 @@ import { SearchEndpoint } from '../../src/rest/SearchEndpoint';
 
 export function SentryLoggerTest() {
   describe('SentryLoggerTest', () => {
-    let sentryLogger: SentryLogger;
     let queryController: QueryController;
     let endpoint: SearchEndpoint;
     let windoh: Window;
@@ -16,12 +15,11 @@ export function SentryLoggerTest() {
       queryController = mockQueryController();
       endpoint = mockSearchEndpoint();
       queryController.getEndpoint = () => endpoint;
-      sentryLogger = new SentryLogger(queryController, windoh);
+      new SentryLogger(queryController, windoh);
     });
 
     afterEach(() => {
       windoh.onerror = null;
-      sentryLogger = null;
       queryController = null;
       endpoint = null;
     });
@@ -44,7 +42,7 @@ export function SentryLoggerTest() {
       let spyError = jasmine.createSpy('error');
       windoh.onerror = spyError;
 
-      sentryLogger = new SentryLogger(queryController, windoh);
+      new SentryLogger(queryController, windoh);
       windoh.location.href = 'somewhere.com';
       windoh.location.host = 'somewhere.com';
       windoh.onerror('an error happened', 'CoveoJsSearch.min.js', 123, 1, new Error('an error happened'));
@@ -53,7 +51,7 @@ export function SentryLoggerTest() {
       expect(endpoint.logError).toHaveBeenCalled();
     });
 
-    it('should not log the error if it\'s localhost', () => {
+    it("should not log the error if it's localhost", () => {
       windoh.location.href = 'localhost';
       windoh.location.host = 'localhost';
       windoh.onerror('an error happened', 'CoveoJsSearch.min.js', 123, 1, new Error('an error happened'));
@@ -61,7 +59,7 @@ export function SentryLoggerTest() {
       expect(endpoint.logError).not.toHaveBeenCalled();
     });
 
-    it('should not log the error if it\' not a coveo file', () => {
+    it("should not log the error if it' not a coveo file", () => {
       windoh.location.href = 'somewhere.com';
       windoh.location.host = 'somewhere.com';
       windoh.onerror('an error happened', 'randomfile.js', 123, 1, new Error('an error happened'));

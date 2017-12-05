@@ -21,8 +21,10 @@ import { exportGlobally } from '../../GlobalExports';
 import { l } from '../../strings/Strings';
 
 import 'styling/_ResultLayout';
+import { SVGIcons } from '../../utils/SVGIcons';
+import { SVGDom } from '../../utils/SVGDom';
 
-interface IActiveLayouts {
+export interface IActiveLayouts {
   button: {
     el: HTMLElement;
     visible: boolean;
@@ -58,16 +60,18 @@ export class ResultLayout extends Component {
 
   static doExport = () => {
     exportGlobally({
-      'ResultLayout': ResultLayout
+      ResultLayout: ResultLayout
     });
-  }
+  };
 
   public static validLayouts: ValidLayout[] = ['list', 'card', 'table'];
 
   public currentLayout: string;
 
   private currentActiveLayouts: { [key: string]: IActiveLayouts };
+
   private resultLayoutSection: HTMLElement;
+  private hasNoResults: boolean;
 
   static options: IResultLayoutOptions = {
     /**
@@ -130,7 +134,11 @@ export class ResultLayout extends Component {
     this.bind.oneRootElement(InitializationEvents.afterComponentsInitialization, () => this.populate());
     this.bind.oneRootElement(InitializationEvents.afterInitialization, () => this.handleQueryStateChanged());
 
-    ResponsiveResultLayout.init(this.root, this, this.options);
+    ResponsiveResultLayout.init(this.root, this, {});
+  }
+
+  public get activeLayouts(): { [key: string]: IActiveLayouts } {
+    return this.currentActiveLayouts;
   }
 
   /**
@@ -147,14 +155,17 @@ export class ResultLayout extends Component {
     Assert.check(this.isLayoutDisplayedByButton(layout), 'Layout not available or invalid');
 
     if (layout !== this.currentLayout || this.getModelValue() === '') {
-
       this.setModelValue(layout);
       const lastResults = this.queryController.getLastResults();
       this.setLayout(layout, lastResults);
       if (lastResults) {
-        this.usageAnalytics.logCustomEvent<IAnalyticsResultsLayoutChange>(analyticsActionCauseList.resultsLayoutChange, {
-          resultsLayoutChangeTo: layout
-        }, this.element);
+        this.usageAnalytics.logCustomEvent<IAnalyticsResultsLayoutChange>(
+          analyticsActionCauseList.resultsLayoutChange,
+          {
+            resultsLayoutChangeTo: layout
+          },
+          this.element
+        );
       } else {
         this.usageAnalytics.logSearchEvent<IAnalyticsResultsLayoutChange>(analyticsActionCauseList.resultsLayoutChange, {
           resultsLayoutChangeTo: layout
@@ -174,13 +185,12 @@ export class ResultLayout extends Component {
 
   public disableLayouts(layouts: ValidLayout[]) {
     if (Utils.isNonEmptyArray(layouts)) {
-      _.each(layouts, (layout) => {
-        this.disableLayout(layout);
-      });
+      _.each(layouts, layout => this.disableLayout(layout));
 
       let remainingValidLayouts = _.difference(_.keys(this.currentActiveLayouts), layouts);
-      if (remainingValidLayouts && remainingValidLayouts[0]) {
-        this.changeLayout(<ValidLayout>remainingValidLayouts[0]);
+      if (!_.isEmpty(remainingValidLayouts)) {
+        const newLayout = _.contains(remainingValidLayouts, this.currentLayout) ? this.currentLayout : remainingValidLayouts[0];
+        this.changeLayout(<ValidLayout>newLayout);
       } else {
         this.logger.error('Cannot disable the last valid layout ... Re-enabling the first one possible');
         let firstPossibleValidLayout = <ValidLayout>_.keys(this.currentActiveLayouts)[0];
@@ -191,7 +201,7 @@ export class ResultLayout extends Component {
   }
 
   public enableLayouts(layouts: ValidLayout[]) {
-    _.each(layouts, (layout) => {
+    _.each(layouts, layout => {
       this.enableLayout(layout);
     });
   }
@@ -209,11 +219,10 @@ export class ResultLayout extends Component {
     }
   }
 
-
   private hideButton(layout: ValidLayout) {
     if (this.isLayoutDisplayedByButton(layout)) {
       let btn = this.currentActiveLayouts[<string>layout].button;
-      $$(btn.el).hide();
+      $$(btn.el).addClass('coveo-hidden');
       btn.visible = false;
       this.updateSelectorAppearance();
     }
@@ -222,7 +231,7 @@ export class ResultLayout extends Component {
   private showButton(layout: ValidLayout) {
     if (this.isLayoutDisplayedByButton(layout)) {
       let btn = this.currentActiveLayouts[<string>layout].button;
-      $$(btn.el).show();
+      $$(btn.el).removeClass('coveo-hidden');
       btn.visible = true;
     }
   }
@@ -243,10 +252,11 @@ export class ResultLayout extends Component {
   }
 
   private handleQuerySuccess(args: IQuerySuccessEventArgs) {
-    if (args.results.results.length === 0 || !this.shouldShowSelector()) {
-      this.hide();
-    } else {
+    this.hasNoResults = args.results.results.length == 0;
+    if (this.shouldShowSelector()) {
       this.show();
+    } else {
+      this.hide();
     }
   }
 
@@ -261,6 +271,7 @@ export class ResultLayout extends Component {
   }
 
   private handleQueryError(args: IQueryErrorEventArgs) {
+    this.hasNoResults = true;
     this.hide();
   }
 
@@ -275,9 +286,11 @@ export class ResultLayout extends Component {
   private populate() {
     let populateArgs: IResultLayoutPopulateArgs = { layouts: [] };
     $$(this.root).trigger(ResultLayoutEvents.populateResultLayout, populateArgs);
-    _.each(populateArgs.layouts, l => Assert.check(_.contains(ResultLayout.validLayouts, l), 'Invalid layout'));
-    if (!_.isEmpty(populateArgs.layouts)) {
-      _.each(populateArgs.layouts, l => this.addButton(l));
+    const layouts = _.uniq(populateArgs.layouts.map(layout => layout.toLowerCase()));
+
+    _.each(layouts, layout => Assert.check(_.contains(ResultLayout.validLayouts, layout), 'Invalid layout'));
+    if (!_.isEmpty(layouts)) {
+      _.each(layouts, layout => this.addButton(layout));
       if (!this.shouldShowSelector()) {
         this.hide();
       }
@@ -285,11 +298,17 @@ export class ResultLayout extends Component {
   }
 
   private addButton(layout: string) {
-    const btn = $$('span', {
-      className: 'coveo-result-layout-selector',
-      tabindex: 0
-    }, $$('span', { className: 'coveo-result-layout-selector-caption' }, l(layout)));
-    btn.prepend($$('span', { className: `coveo-icon coveo-sprites-${layout}-layout` }).el);
+    const btn = $$(
+      'span',
+      {
+        className: 'coveo-result-layout-selector',
+        tabindex: 0
+      },
+      $$('span', { className: 'coveo-result-layout-selector-caption' }, l(layout))
+    );
+    const icon = $$('span', { className: `coveo-icon coveo-${layout}-layout-icon` }, SVGIcons.icons[`${layout}Layout`]);
+    SVGDom.addClassToSVGInContainer(icon.el, `coveo-${layout}-svg`);
+    btn.prepend(icon.el);
     if (layout === this.currentLayout) {
       btn.addClass('coveo-selected');
     }
@@ -325,7 +344,11 @@ export class ResultLayout extends Component {
   }
 
   private shouldShowSelector() {
-    return _.keys(this.currentActiveLayouts).length > 1 && _.filter(this.currentActiveLayouts, (activeLayout: IActiveLayouts) => activeLayout.button.visible).length > 1;
+    return (
+      _.keys(this.currentActiveLayouts).length > 1 &&
+      _.filter(this.currentActiveLayouts, (activeLayout: IActiveLayouts) => activeLayout.button.visible).length > 1 &&
+      !this.hasNoResults
+    );
   }
 
   private isLayoutDisplayedByButton(layout: ValidLayout) {

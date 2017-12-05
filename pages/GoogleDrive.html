@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 
   <head>
@@ -7,20 +7,20 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, height=device-height" >
-    <script src="js/CoveoJsSearch.js"></script>
-    <script src="js/templates/templatesNew.js"></script>
-    <link rel="stylesheet" href="css/CoveoFullSearchNewDesign.css" />
+    <link rel="stylesheet" href="./css/CoveoFullSearch.css"/>
+    <script src="js/CoveoJsSearch.Lazy.js"></script>
+    <script src="js/templates/templates.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function(){
-        Coveo.SearchEndpoint.configureSampleEndpoint();
+        Coveo.SearchEndpoint.configureSampleEndpointV2();
         Coveo.init(document.body);
       })
     </script>
   </head>
 
-  <body id="search" class='CoveoSearchInterface' data-enable-history="true" data-design="new">
+  <body id="search" class='CoveoSearchInterface' data-enable-history="true">
     <div class="coveo-tab-section">
-      <a class="CoveoTab" data-id="GoogleDrive" data-caption="Google Drive" data-expression="@connectortype==GoogleDriveCrawler"></a>
+      <a class="CoveoTab" data-id="GoogleDrive" data-caption="Google Drive" data-expression="@connectortype==GoogleDriveCrawler AND @documenttype==(File,Folder)"></a>
     </div>
     <div class='coveo-search-section'>
       <div class="CoveoSettings"></div>

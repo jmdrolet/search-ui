@@ -22,22 +22,22 @@ export interface IThumbnailOptions extends IResultLinkOptions {
 /**
  * The Thumbnail component automatically fetches the thumbnail of the result object and outputs an HTML `img` tag with
  * it.
+ * @notSupportedIn salesforcefree
  */
 export class Thumbnail extends Component {
   static ID = 'Thumbnail';
 
   static doExport = () => {
     exportGlobally({
-      'Thumbnail': Thumbnail
+      Thumbnail: Thumbnail
     });
-  }
+  };
 
   /**
    * Options for the Thumbnail
    * @componentOptions
    */
   static options: IThumbnailOptions = {
-
     /**
      * Specifies the CSS class to use on the `img` tag that the Thumbnail component outputs when a result has no
      * thumbnail in the index.
@@ -68,7 +68,12 @@ export class Thumbnail extends Component {
    * automatically resolved (with a slower execution time).
    * @param result The result to associate the component with.
    */
-  constructor(public element: HTMLElement, public options?: IThumbnailOptions, public bindings?: IResultsComponentBindings, public result?: IQueryResult) {
+  constructor(
+    public element: HTMLElement,
+    public options?: IThumbnailOptions,
+    public bindings?: IResultsComponentBindings,
+    public result?: IQueryResult
+  ) {
     super(element, Thumbnail.ID, bindings);
 
     this.options = ComponentOptions.initOptions(element, <any>Thumbnail.options, options);
@@ -90,7 +95,6 @@ export class Thumbnail extends Component {
         new ResultLink(href.el, this.options, this.bindings, this.result);
       }
     }
-
 
     // We need to set src to a blank image right away to avoid the image from
     // changing size once it's loaded. Also, doing this prevents a border from
@@ -121,14 +125,17 @@ export class Thumbnail extends Component {
   }
 
   private buildImageWithDirectSrcAttribute(endpoint: ISearchEndpoint) {
-    let dataStreamUri = endpoint.getViewAsDatastreamUri(this.result.uniqueId, '$Thumbnail$', { contentType: 'image/png' });
+    let dataStreamUri = endpoint.getViewAsDatastreamUri(this.result.uniqueId, '$Thumbnail$', {
+      contentType: 'image/png'
+    });
     this.img.setAttribute('src', dataStreamUri);
     this.resizeContainingFieldTable();
   }
 
   private buildImageWithBase64SrcAttribute(endpoint: ISearchEndpoint) {
-    endpoint.getRawDataStream(this.result.uniqueId, '$Thumbnail$')
-      .then((response) => {
+    endpoint
+      .getRawDataStream(this.result.uniqueId, '$Thumbnail$')
+      .then(response => {
         let rawBinary = String.fromCharCode.apply(null, new Uint8Array(response));
         this.img.setAttribute('src', 'data:image/png;base64, ' + btoa(rawBinary));
         this.resizeContainingFieldTable();

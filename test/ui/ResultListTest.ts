@@ -29,7 +29,6 @@ export function ResultListTest() {
     });
 
     describe('displayMoreResults', () => {
-
       beforeEach(() => {
         // Fill the result list one time first, so we can have more results.
         Simulate.query(test.env);
@@ -45,7 +44,7 @@ export function ResultListTest() {
           (<jasmine.Spy>test.env.queryController.fetchMore).and.returnValue(promiseResults);
         });
 
-        it('should stop asking for more results if consecutive calls are queued', (done) => {
+        it('should stop asking for more results if consecutive calls are queued', done => {
           Defer.defer(() => {
             test.cmp.displayMoreResults(10);
             test.cmp.displayMoreResults(10);
@@ -55,7 +54,7 @@ export function ResultListTest() {
           });
         });
 
-        it('should stop asking for more results if less results than requested are returned', (done) => {
+        it('should stop asking for more results if less results than requested are returned', done => {
           Defer.defer(() => {
             test.cmp.displayMoreResults(10);
             promiseResults.then(() => {
@@ -81,7 +80,7 @@ export function ResultListTest() {
           promiseResults = null;
         });
 
-        it('should trigger 10 new result displayed event when fetching more results', (done) => {
+        it('should trigger 10 new result displayed event when fetching more results', done => {
           const newResultSpy = jasmine.createSpy('newresultspy');
           $$(test.cmp.element).on(ResultListEvents.newResultDisplayed, newResultSpy);
           Defer.defer(() => {
@@ -92,7 +91,7 @@ export function ResultListTest() {
           });
         });
 
-        it('should trigger a single new results displayed event when fetching more results', (done) => {
+        it('should trigger a single new results displayed event when fetching more results', done => {
           const newResultsSpy = jasmine.createSpy('newresultsspy');
           $$(test.cmp.element).on(ResultListEvents.newResultsDisplayed, newResultsSpy);
 
@@ -102,19 +101,22 @@ export function ResultListTest() {
               done();
             });
           });
-
         });
 
-        it('should log an analytics event when more results are returned', (done) => {
+        it('should log an analytics event when more results are returned', done => {
           Defer.defer(() => {
             test.cmp.displayMoreResults(10).then(() => {
-              expect(test.env.usageAnalytics.logCustomEvent).toHaveBeenCalledWith(analyticsActionCauseList.pagerScrolling, jasmine.any(Object), test.cmp.element);
+              expect(test.env.usageAnalytics.logCustomEvent).toHaveBeenCalledWith(
+                analyticsActionCauseList.pagerScrolling,
+                jasmine.any(Object),
+                test.cmp.element
+              );
               done();
             });
           });
         });
 
-        it('should queue up another scroll when it receives results to fill up the container, if infinite scrolling is enabled', (done) => {
+        it('should queue up another scroll when it receives results to fill up the container, if infinite scrolling is enabled', done => {
           test.cmp.options.enableInfiniteScroll = true;
           Defer.defer(() => {
             test.cmp.displayMoreResults(10);
@@ -127,7 +129,7 @@ export function ResultListTest() {
           });
         });
 
-        it('should not queue up infinite amount of request if it is trying to fill up the scrolling container', (done) => {
+        it('should not queue up infinite amount of request if it is trying to fill up the scrolling container', done => {
           test.cmp.options.enableInfiniteScroll = true;
           test.cmp.displayMoreResults(10);
           promiseResults.then(() => {
@@ -141,6 +143,37 @@ export function ResultListTest() {
       });
     });
 
+    it('should tell if there are more results to display after a successful query', done => {
+      const queryBuilder = new QueryBuilder();
+      queryBuilder.numberOfResults = 10;
+
+      Simulate.query(test.env, {
+        results: FakeResults.createFakeResults(10),
+        query: queryBuilder.build()
+      });
+
+      Defer.defer(() => {
+        expect(test.cmp.hasPotentiallyMoreResultsToDisplay()).toBeTruthy();
+        done();
+      });
+    });
+
+    it('should tell if there are no more results to display after a successful query with a limited amount of results returned', done => {
+      const results = FakeResults.createFakeResults(5);
+      const queryBuilder = new QueryBuilder();
+      queryBuilder.numberOfResults = 10;
+
+      Simulate.query(test.env, {
+        results: results,
+        query: queryBuilder.build()
+      });
+
+      Defer.defer(() => {
+        expect(test.cmp.hasPotentiallyMoreResultsToDisplay()).toBeFalsy();
+        done();
+      });
+    });
+
     it('should allow to return the currently displayed result', () => {
       expect(ResultList.resultCurrentlyBeingRendered).toBeNull();
       const data = FakeResults.createFakeResult();
@@ -148,7 +181,7 @@ export function ResultListTest() {
       expect(ResultList.resultCurrentlyBeingRendered).toBe(data);
     });
 
-    it('should set currently displayed result to undefined when they are all rendered', (done) => {
+    it('should set currently displayed result to undefined when they are all rendered', done => {
       const data = FakeResults.createFakeResults(13);
       test.cmp.buildResults(data).then(() => {
         expect(ResultList.resultCurrentlyBeingRendered).toBeNull();
@@ -156,7 +189,28 @@ export function ResultListTest() {
       });
     });
 
-    it('should reset currently displayed on new query', (done) => {
+    it('should update the currentlyDisplayedResults when building a single result', done => {
+      const data = FakeResults.createFakeResult();
+      expect(test.cmp.getDisplayedResults().length).toEqual(0);
+      test.cmp.buildResult(data).then(() => {
+        expect(test.cmp.getDisplayedResults().length).toEqual(1);
+        expect(test.cmp.getDisplayedResults()[0]).toEqual(data);
+        done();
+      });
+    });
+
+    it('should update the currentlyDisplayedResults when building multiple results', done => {
+      const data = FakeResults.createFakeResults(5);
+      expect(test.cmp.getDisplayedResults().length).toEqual(0);
+      test.cmp.buildResults(data).then(() => {
+        expect(test.cmp.getDisplayedResults().length).toEqual(5);
+        expect(test.cmp.getDisplayedResults()[0]).toEqual(data.results[0]);
+        expect(test.cmp.getDisplayedResults()[4]).toEqual(data.results[4]);
+        done();
+      });
+    });
+
+    it('should reset currently displayed on new query', done => {
       const data = FakeResults.createFakeResult();
       test.cmp.buildResult(data).then(() => {
         expect(ResultList.resultCurrentlyBeingRendered).toBe(data);
@@ -165,11 +219,10 @@ export function ResultListTest() {
           expect(ResultList.resultCurrentlyBeingRendered).toBeNull();
           done();
         });
-
       });
     });
 
-    it('should allow to build a single result element', (done) => {
+    it('should allow to build a single result element', done => {
       const data = FakeResults.createFakeResult();
       test.cmp.buildResult(data).then(built => {
         expect(built).toBeDefined();
@@ -177,10 +230,9 @@ export function ResultListTest() {
         expect($$(rs).text()).toBe(data.title);
         done();
       });
-
     });
 
-    it('should allow to build multiple results element', (done) => {
+    it('should allow to build multiple results element', done => {
       const data = FakeResults.createFakeResults(13);
       test.cmp.buildResults(data).then(built => {
         expect(built.length).toBe(13);
@@ -192,7 +244,7 @@ export function ResultListTest() {
       });
     });
 
-    it('should bind result on the HTMLElement', (done) => {
+    it('should bind result on the HTMLElement', done => {
       const data = FakeResults.createFakeResults(13);
       test.cmp.buildResults(data).then(built => {
         expect(built[0]['CoveoResult']).toEqual(jasmine.objectContaining({ title: 'Title0' }));
@@ -205,54 +257,60 @@ export function ResultListTest() {
       });
     });
 
-    it('should allow to render results inside the result list', (done) => {
+    it('should allow to render results inside the result list', done => {
       const data = FakeResults.createFakeResults(13);
-      test.cmp.buildResults(data).then(elem => {
-        test.cmp.renderResults(elem);
-        expect($$(test.cmp.element).findAll('.CoveoResult').length).toBe(13);
-        done();
-      });
-    });
-
-    it('should allow to render results and append them', (done) => {
-      const data = FakeResults.createFakeResults(13);
-      test.cmp.buildResults(data).then(elem => {
-        test.cmp.renderResults(elem);
-        test.cmp.buildResults(data).then(elem => {
-          test.cmp.renderResults(elem, true);
-          expect($$(test.cmp.element).findAll('.CoveoResult').length).toBe(26);
-          done();
-        });
-      });
-    });
-
-    it('should allow to render results and not append them', (done) => {
-      const data = FakeResults.createFakeResults(13);
-      test.cmp.buildResults(data).then(elem => {
-        test.cmp.renderResults(elem);
-        test.cmp.buildResults(data).then(elem => {
-          test.cmp.renderResults(elem, false);
+      test.cmp
+        .buildResults(data)
+        .then(elem => test.cmp.renderResults(elem))
+        .then(() => {
           expect($$(test.cmp.element).findAll('.CoveoResult').length).toBe(13);
           done();
         });
-      });
     });
 
-    it('should trigger result displayed event when rendering', (done) => {
+    it('should allow to render results and append them', done => {
+      const data = FakeResults.createFakeResults(13);
+      test.cmp
+        .buildResults(data)
+        .then(elem => test.cmp.renderResults(elem))
+        .then(() => test.cmp.buildResults(data))
+        .then(elem => test.cmp.renderResults(elem, true))
+        .then(() => {
+          expect($$(test.cmp.element).findAll('.CoveoResult').length).toBe(26);
+          done();
+        });
+    });
+
+    it('should allow to render results and not append them', done => {
+      const data = FakeResults.createFakeResults(13);
+      test.cmp
+        .buildResults(data)
+        .then(elem => test.cmp.renderResults(elem))
+        .then(() => test.cmp.buildResults(data))
+        .then(elem => test.cmp.renderResults(elem, false))
+        .then(() => {
+          expect($$(test.cmp.element).findAll('.CoveoResult').length).toBe(13);
+          done();
+        });
+    });
+
+    it('should trigger result displayed event when rendering', done => {
       const data = FakeResults.createFakeResults(6);
       const spyResult = jasmine.createSpy('spyResult');
       const spyResults = jasmine.createSpy('spyResults');
       $$(test.cmp.element).on(ResultListEvents.newResultDisplayed, spyResult);
       $$(test.cmp.element).on(ResultListEvents.newResultsDisplayed, spyResults);
-      test.cmp.buildResults(data).then(elem => {
-        test.cmp.renderResults(elem);
-        expect(spyResult).toHaveBeenCalledTimes(6);
-        expect(spyResults).toHaveBeenCalledTimes(1);
-        done();
-      });
+      test.cmp
+        .buildResults(data)
+        .then(elem => test.cmp.renderResults(elem))
+        .then(() => {
+          expect(spyResult).toHaveBeenCalledTimes(6);
+          expect(spyResults).toHaveBeenCalledTimes(1);
+          done();
+        });
     });
 
-    it('should render itself correctly after a full query', (done) => {
+    it('should render itself correctly after a full query', done => {
       const spyResult = jasmine.createSpy('spyResult');
       const spyResults = jasmine.createSpy('spyResults');
       $$(test.cmp.element).on(ResultListEvents.newResultDisplayed, spyResult);
@@ -267,8 +325,7 @@ export function ResultListTest() {
       });
     });
 
-
-    it('should clear itself on query error', (done) => {
+    it('should clear itself on query error', done => {
       Simulate.query(test.env);
       Defer.defer(() => {
         expect(test.cmp.getDisplayedResults().length).toBe(10);
@@ -295,7 +352,7 @@ export function ResultListTest() {
       expect($$(test.cmp.element).hasClass('coveo-hidden')).toBe(false);
     });
 
-    it('should hide and show specific css class correctly', (done) => {
+    it('should hide and show specific css class correctly', done => {
       const showIfQuery = $$('div', {
         className: 'coveo-show-if-query'
       });
@@ -346,7 +403,7 @@ export function ResultListTest() {
     });
 
     describe('exposes options', () => {
-      it('resultContainer allow to specify where to render results', (done) => {
+      it('resultContainer allow to specify where to render results', done => {
         const aNewContainer = document.createElement('div');
         expect(aNewContainer.children.length).toBe(0);
         test = Mock.optionsComponentSetup<ResultList, IResultListOptions>(ResultList, {
@@ -365,14 +422,44 @@ export function ResultListTest() {
         });
 
         const simulation = Simulate.query(test.env);
-        expect(simulation.queryBuilder.build().fieldsToInclude).toEqual(jasmine.arrayContaining(['author', 'language', 'urihash', 'objecttype', 'collection', 'source', 'language', 'permanentid']));
+        expect(simulation.queryBuilder.build().fieldsToInclude).toEqual(
+          jasmine.arrayContaining(['author', 'language', 'urihash', 'objecttype', 'collection', 'source', 'language', 'permanentid'])
+        );
       });
 
       it('should allow to get the auto select fields to include', () => {
-        expect(test.cmp.getAutoSelectedFieldsToInclude()).toEqual(jasmine.arrayContaining(['author', 'language', 'urihash', 'objecttype', 'collection', 'source', 'language', 'permanentid']));
+        expect(test.cmp.getAutoSelectedFieldsToInclude()).toEqual(
+          jasmine.arrayContaining(['author', 'language', 'urihash', 'objecttype', 'collection', 'source', 'language', 'permanentid'])
+        );
       });
 
-      it('resultTemplate allow to specify a template manually', (done) => {
+      it('should call auto select fields to include on other result list', () => {
+        test = Mock.optionsComponentSetup<ResultList, IResultListOptions>(ResultList, {
+          autoSelectFieldsToInclude: true
+        });
+
+        const otherResultList = Mock.mockComponent<ResultList>(ResultList);
+        otherResultList.element = document.createElement('div');
+        $$(otherResultList.element).addClass('CoveoResultList');
+        otherResultList.element['CoveoBoundComponents'] = [otherResultList];
+        $$(test.env.root).append(otherResultList.element);
+        Simulate.query(test.env);
+        expect(otherResultList.getAutoSelectedFieldsToInclude).toHaveBeenCalled();
+      });
+
+      it('should not throw when finding auto select fields to include on another result list that is not initialized ', () => {
+        test = Mock.optionsComponentSetup<ResultList, IResultListOptions>(ResultList, {
+          autoSelectFieldsToInclude: true
+        });
+
+        const otherResultList = Mock.mockComponent<ResultList>(ResultList);
+        otherResultList.element = document.createElement('div');
+        $$(otherResultList.element).addClass('CoveoResultList');
+        $$(test.env.root).append(otherResultList.element);
+        expect(() => Simulate.query(test.env)).not.toThrow();
+      });
+
+      it('resultTemplate allow to specify a template manually', done => {
         const tmpl: UnderscoreTemplate = Mock.mock<UnderscoreTemplate>(UnderscoreTemplate);
         const asSpy = <any>tmpl;
         asSpy.instantiateToElement.and.returnValue(new Promise((resolve, reject) => resolve(document.createElement('div'))));
@@ -427,8 +514,7 @@ export function ResultListTest() {
         });
       });
 
-      it('enableInfiniteScroll allow to enable infinite scrolling', (done) => {
-
+      it('enableInfiniteScroll allow to enable infinite scrolling', done => {
         test = Mock.optionsComponentSetup<ResultList, IResultListOptions>(ResultList, {
           enableInfiniteScroll: false
         });
@@ -447,7 +533,7 @@ export function ResultListTest() {
         });
       });
 
-      it('infiniteScrollPageSize allow to specify the number of result to fetch when scrolling', (done) => {
+      it('infiniteScrollPageSize allow to specify the number of result to fetch when scrolling', done => {
         test = Mock.optionsComponentSetup<ResultList, IResultListOptions>(ResultList, {
           enableInfiniteScroll: true,
           infiniteScrollPageSize: 26
@@ -477,7 +563,6 @@ export function ResultListTest() {
           const layoutsPopulated = [];
           $$(test.env.root).trigger(ResultLayoutEvents.populateResultLayout, { layouts: layoutsPopulated });
           expect(layoutsPopulated).toEqual(jasmine.arrayContaining(['card']));
-
         });
 
         it('should set the correct layout on each child template if it contains a TemplateList', () => {
@@ -494,16 +579,19 @@ export function ResultListTest() {
           });
           elem.append(scriptOne.el);
           elem.append(scriptTwo.el);
-          test = Mock.advancedComponentSetup<ResultList>(ResultList, new AdvancedComponentSetupOptions(elem.el, {
-            layout: 'card'
-          }));
+          test = Mock.advancedComponentSetup<ResultList>(
+            ResultList,
+            new AdvancedComponentSetupOptions(elem.el, {
+              layout: 'card'
+            })
+          );
 
           expect(test.cmp.options.resultTemplate instanceof TemplateList).toBe(true);
           expect((<TemplateList>test.cmp.options.resultTemplate).templates[0].layout).toBe('card');
           expect((<TemplateList>test.cmp.options.resultTemplate).templates[1].layout).toBe('card');
         });
 
-        it('should add 3 empty div at the end of the results when it\'s a card template and infinite scroll is not enabled', (done) => {
+        it("should add 3 empty div at the end of the results when it's a card template and infinite scroll is not enabled", done => {
           test = Mock.optionsComponentSetup<ResultList, IResultListOptions>(ResultList, {
             layout: 'card',
             enableInfiniteScroll: false
@@ -515,21 +603,6 @@ export function ResultListTest() {
             expect(container.children.item(container.children.length - 2).innerHTML).toBe('');
             expect(container.children.item(container.children.length - 3).innerHTML).toBe('');
             expect(container.children.item(container.children.length - 4).innerHTML).not.toBe('');
-            done();
-          });
-        });
-
-        it('should add 3 empty div at the end of the results when it\'s a card template and infinite scroll is enabled', (done) => {
-          test = Mock.optionsComponentSetup<ResultList, IResultListOptions>(ResultList, {
-            layout: 'card',
-            enableInfiniteScroll: true
-          });
-          Simulate.query(test.env);
-          Defer.defer(() => {
-            const container = test.cmp.options.resultContainer;
-            expect(container.children.item(container.children.length - 1).innerHTML).not.toBe('');
-            expect(container.children.item(container.children.length - 2).innerHTML).not.toBe('');
-            expect(container.children.item(container.children.length - 3).innerHTML).not.toBe('');
             done();
           });
         });

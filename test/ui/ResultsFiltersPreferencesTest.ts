@@ -1,37 +1,32 @@
 import * as Mock from '../MockEnvironment';
 import { ResultsFiltersPreferences } from '../../src/ui/ResultsFiltersPreferences/ResultsFiltersPreferences';
 import { $$ } from '../../src/utils/Dom';
-import { l } from '../../src/strings/Strings';
 import { PreferencesPanel } from '../../src/ui/PreferencesPanel/PreferencesPanel';
 import { Simulate } from '../Simulate';
 import { BreadcrumbEvents, IBreadcrumbItem } from '../../src/events/BreadcrumbEvents';
 
 export function ResultsFiltersPreferencesTest() {
-
-
   describe('ResultsFiltersPreferences', () => {
     let test: Mock.IBasicComponentSetup<ResultsFiltersPreferences>;
-    let preferencesPanelElement: HTMLElement;
     let testPreferencesPanel: Mock.IBasicComponentSetup<PreferencesPanel>;
 
     beforeEach(() => {
-      preferencesPanelElement = $$('div', { className: 'CoveoPreferencesPanel' }).el;
       testPreferencesPanel = Mock.basicComponentSetup<PreferencesPanel>(PreferencesPanel);
-      test = Mock.advancedComponentSetup<ResultsFiltersPreferences>(ResultsFiltersPreferences, new Mock.AdvancedComponentSetupOptions(undefined, undefined, (env) => {
-        return env.withElement(testPreferencesPanel.cmp.element);
-      }));
+      test = Mock.advancedComponentSetup<ResultsFiltersPreferences>(
+        ResultsFiltersPreferences,
+        new Mock.AdvancedComponentSetupOptions(undefined, undefined, env => {
+          return env.withElement(testPreferencesPanel.cmp.element);
+        })
+      );
     });
 
     afterEach(() => {
       test = null;
-      preferencesPanelElement = null;
     });
 
     it('should allow to createDom', () => {
       test.cmp.createDom();
-      let title = $$(test.cmp.element).find('.coveo-title');
-      expect(title).not.toBeNull();
-      expect($$(title).text()).toBe(l('ResultsFilteringExpression'));
+      expect(test.cmp.container).not.toBeNull();
     });
 
     it('should allow to save', () => {
@@ -41,11 +36,18 @@ export function ResultsFiltersPreferencesTest() {
 
     describe('with a predetermined filter', () => {
       beforeEach(() => {
-        test = Mock.advancedComponentSetup<ResultsFiltersPreferences>(ResultsFiltersPreferences, new Mock.AdvancedComponentSetupOptions(undefined, {
-          filters: { 'Test filter': { 'expression': 'test expression' } }
-        }, (env) => {
-          return env.withElement(testPreferencesPanel.cmp.element);
-        }));
+        test = Mock.advancedComponentSetup<ResultsFiltersPreferences>(
+          ResultsFiltersPreferences,
+          new Mock.AdvancedComponentSetupOptions(
+            undefined,
+            {
+              filters: { 'Test filter': { expression: 'test expression' } }
+            },
+            env => {
+              return env.withElement(testPreferencesPanel.cmp.element);
+            }
+          )
+        );
       });
 
       it('should allow to create the filter', () => {

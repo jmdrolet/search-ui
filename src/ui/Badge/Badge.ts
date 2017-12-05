@@ -36,16 +36,15 @@ export class Badge extends FieldValue implements IComponentBindings {
 
   static doExport = () => {
     exportGlobally({
-      'Badge': Badge
+      Badge: Badge
     });
-  }
+  };
 
   /**
    * The options for the component
    * @componentOptions
    */
   static options: IBadgeOptions = {
-
     /**
      * Specifies the colors for the Badge component.
      *
@@ -71,7 +70,9 @@ export class Badge extends FieldValue implements IComponentBindings {
      *
      * Colors can be specified in HTML or hexadecimal format.
      */
-    colors: ComponentOptions.buildCustomOption<IBadgeColors>((value: string) => Badge.parseColors(value), { defaultValue: { values: {} } }),
+    colors: ComponentOptions.buildCustomOption<IBadgeColors>((value: string) => Badge.parseColors(value), {
+      defaultValue: { values: {} }
+    }),
     textCaption: ComponentOptions.buildLocalizedStringOption()
   };
 
@@ -151,7 +152,7 @@ export class Badge extends FieldValue implements IComponentBindings {
     var color: IBadgeColor = colorKey ? this.options.colors.values[colorKey] : {};
     return {
       icon: color.icon || this.options.colors.icon,
-      text: color.text || this.options.colors.text,
+      text: color.text || this.options.colors.text
     };
   }
 
@@ -167,13 +168,9 @@ export class Badge extends FieldValue implements IComponentBindings {
 
     let color = this.getColor(value);
 
-    if (this.searchInterface.isNewDesign()) {
-      var icon = $$('span', { className: 'coveo-badge-icon' }).el;
-      if (color.icon != null) {
-        icon.style.color = color.icon;
-      }
-    } else if (color.icon != null) {
-      valueDom.style.background = color.icon;
+    var icon = $$('span', { className: 'coveo-badge-icon' }).el;
+    if (color.icon != null) {
+      icon.style.color = color.icon;
     }
 
     let label = $$('span', { className: 'coveo-badge-label' }, valueDom.innerHTML).el;
@@ -184,9 +181,7 @@ export class Badge extends FieldValue implements IComponentBindings {
 
     $$(valueDom).empty();
 
-    if (this.searchInterface.isNewDesign()) {
-      valueDom.appendChild(icon);
-    }
+    valueDom.appendChild(icon);
     valueDom.appendChild(label);
     return valueDom;
   }
